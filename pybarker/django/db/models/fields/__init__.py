@@ -24,5 +24,5 @@ class CurrencyField(models.DecimalField):
         except AttributeError:
             return None
 
-    def from_db_value(self, value, **kwargs):
+    def from_db_value(self, value, *args):
         return self.to_python(value)
