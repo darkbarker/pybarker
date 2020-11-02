@@ -6,7 +6,7 @@ def print_exception(fn):
     def wrapped(*args, **kwargs):
         try:
             return fn(*args, **kwargs)
-        except:
+        except Exception as _:
             import traceback
             traceback.print_exc()
             raise
@@ -18,7 +18,7 @@ def print_timing(fn):
     def wrapped(*args, **kwargs):
         t = time.time()
         fret = fn(*args, **kwargs)
-        print('%s: %s ms' % (fn, (time.time() - t) * 1000))
+        print('%s: %s sec' % (fn.__qualname__, int((time.time() - t) * 1000) / 1000))
         return fret
     return wrapped
 
