@@ -35,7 +35,8 @@ class StatsMiddleware(MiddlewareMixin):
         response["X-Page-Generation-Queries-time"] = quertime
         for num, dublicate in enumerate(dublicates):
             if dublicates[dublicate] > 1:
-                response["X-Page-Generation-Queries-dublicate-%s" % (num + 1)] = "%s ***** %s times" % (dublicate, dublicates[dublicate])
+                # response["X-Page-Generation-Queries-dublicate-%s" % (num + 1)] = "%s ***** %s times" % (dublicate, dublicates[dublicate])
+                response["X-Page-Generation-Queries-dublicate-%s" % (num + 1)] = "%s" % (dublicates[dublicate])
         # for num, query in enumerate(querlist):
         #    response["X-Page-Generation-Queries-%s" % (num + 1)] = query
         # logging
