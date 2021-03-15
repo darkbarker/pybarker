@@ -1,7 +1,8 @@
 from decimal import Decimal
 
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db import models
+from pybarker.django import forms as pbforms
 
 __all__ = [
     "CurrencyField",
@@ -40,9 +41,18 @@ class TruncatingCharField(models.CharField):
         return value[:self.max_length] if value else value
 
 
+# TODO проверить, тесты сделать
 class CommaSeparatedTypedField(models.CharField):
+    """
+    поле для хранения элементов типа в контейнере list/set, поле текстовое хранятся через запятую
+    """
+
+    # допустимые типы для el_container_type
+    CONTAINER_TYPES = (list, set)
 
     def __init__(self, verbose_name=None, name=None, el_type=str, el_container_type=list, *args, **kwargs):
+        if el_container_type not in self.CONTAINER_TYPES:
+            raise ImproperlyConfigured("el_container_type must be: %s" % ", ".join(self.CONTAINER_TYPES))
         self.el_type, self.el_container_type = el_type, el_container_type
         super().__init__(verbose_name=verbose_name, name=name, *args, **kwargs)
 
@@ -58,6 +68,13 @@ class CommaSeparatedTypedField(models.CharField):
         # print("!CommaSeparatedTypedField.to_python", self.name, value, type(value))
         if isinstance(value, self.el_container_type) or value is None:
             return value
+        # если контейнер но не тот, то превращаем в нужный, заодно с элементами разбираемся (+валидация заодно)
+        if isinstance(value, self.CONTAINER_TYPES):
+            try:
+                return self.el_container_type(self.el_type(e) for e in value)
+            except Exception as e:
+                raise ValidationError("error item comma-separated-%s value \"%s\"" % (self.el_type.__name__, value))
+        # если строка всё же
         value = value.strip()
         if not value:  # если не None а пустая, то это пустой список
             return self.el_container_type()  # например, значение []
@@ -83,3 +100,12 @@ class CommaSeparatedTypedField(models.CharField):
             except Exception as _:
                 raise ValidationError("value item %s not %s-like" % (v, self.el_type.__name__))
         return ",".join(str(x) for x in value)
+
+    def formfield(self, **kwargs):
+        return super().formfield(**{
+            "max_length": self.max_length,
+            "el_type": self.el_type,
+            "el_container_type": self.el_container_type,
+            "form_class": pbforms.CommaSeparatedTypedField,
+            **kwargs,
+        })
