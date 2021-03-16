@@ -44,42 +44,37 @@ class TruncatingCharField(models.CharField):
 # TODO проверить, тесты сделать
 class CommaSeparatedTypedField(models.CharField):
     """
-    поле для хранения элементов типа в контейнере list/set, поле текстовое хранятся через запятую
+    поле для хранения элементов типа в контейнере list, поле текстовое хранятся через разделитель
     """
 
-    # допустимые типы для el_container_type
-    CONTAINER_TYPES = (list, set)
-
-    def __init__(self, verbose_name=None, name=None, el_type=str, el_container_type=list, *args, **kwargs):
-        if el_container_type not in self.CONTAINER_TYPES:
-            raise ImproperlyConfigured("el_container_type must be: %s" % ", ".join(self.CONTAINER_TYPES))
-        self.el_type, self.el_container_type = el_type, el_container_type
+    def __init__(self, verbose_name=None, name=None, el_type=str, *args, **kwargs):
+        self.el_type = el_type
         super().__init__(verbose_name=verbose_name, name=name, *args, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
         if self.el_type != str:
             kwargs["el_type"] = self.el_type
-        if self.el_container_type != list:
-            kwargs["el_container_type"] = self.el_container_type
         return name, path, args, kwargs
 
     def to_python(self, value):
         # print("!CommaSeparatedTypedField.to_python", self.name, value, type(value))
-        if isinstance(value, self.el_container_type) or value is None:
-            return value
-        # если контейнер но не тот, то превращаем в нужный, заодно с элементами разбираемся (+валидация заодно)
-        if isinstance(value, self.CONTAINER_TYPES):
+        if value is None:
+            return None
+        # если list, то превращаем в нужный с элементами (+валидация заодно)
+        if isinstance(value, list):
             try:
-                return self.el_container_type(self.el_type(e) for e in value)
+                return [self.el_type(e) for e in value]
             except Exception as e:
                 raise ValidationError("error item comma-separated-%s value \"%s\"" % (self.el_type.__name__, value))
         # если строка всё же
+        if not isinstance(value, str):
+            raise ValidationError("error value type %s" % type(value))
         value = value.strip()
         if not value:  # если не None а пустая, то это пустой список
-            return self.el_container_type()  # например, значение []
+            return []
         try:
-            return self.el_container_type(self.el_type(e) for e in value.split(",") if e)
+            return [self.el_type(e) for e in value.split(",") if e]
         except Exception as e:
             raise ValidationError("error comma-separated-%s value \"%s\"" % (self.el_type.__name__, value))
 
@@ -92,8 +87,8 @@ class CommaSeparatedTypedField(models.CharField):
             return None
         if not value:  # если что-то заполняли, но не None, то будет пробел в БД вместо NULL, т.е. пустой список
             return ""
-        if not isinstance(value, self.el_container_type):
-            raise ValidationError("value %s is not %s" % (value, self.el_container_type.__name__))
+        if not isinstance(value, list):
+            raise ValidationError("value %s is not list" % value)
         for v in value:
             try:
                 self.el_type(v)
@@ -105,7 +100,6 @@ class CommaSeparatedTypedField(models.CharField):
         return super().formfield(**{
             "max_length": self.max_length,
             "el_type": self.el_type,
-            "el_container_type": self.el_container_type,
             "form_class": pbforms.CommaSeparatedTypedField,
             **kwargs,
         })

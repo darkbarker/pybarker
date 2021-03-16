@@ -22,11 +22,8 @@ class ReadableJSONField(JSONField):
 # TODO проверить, тесты сделать
 class CommaSeparatedTypedField(CharField):
 
-    # допустимые типы для el_container_type
-    CONTAINER_TYPES = (list, set)
-
-    def __init__(self, *, el_type=str, el_container_type=list, **kwargs):
-        self.el_type, self.el_container_type = el_type, el_container_type
+    def __init__(self, *, el_type=str, **kwargs):
+        self.el_type = el_type
         super().__init__(**kwargs)
         #self.validators.append(validators.DecimalValidator(max_digits, decimal_places))
 
@@ -35,9 +32,9 @@ class CommaSeparatedTypedField(CharField):
             return None
 
         # если контейнер, то превращаем в нужный, заодно с элементами разбираемся (+валидация заодно)
-        if isinstance(value, self.CONTAINER_TYPES):
+        if isinstance(value, list):
             try:
-                return self.el_container_type(self.el_type(e) for e in value)
+                return [self.el_type(e) for e in value]
             except Exception as e:
                 raise ValidationError("error item comma-separated-%s value \"%s\"" % (self.el_type.__name__, value))
 
