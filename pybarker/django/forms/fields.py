@@ -19,13 +19,18 @@ class ReadableJSONField(JSONField):
         return json.dumps(value, indent=2, ensure_ascii=False)
 
 
-# TODO проверить, тесты сделать
+# поле формы, в дополнение к models.CommaSeparatedTypedField
 class CommaSeparatedTypedField(CharField):
 
     def __init__(self, *, el_type=str, **kwargs):
         self.el_type = el_type
         super().__init__(**kwargs)
-        #self.validators.append(validators.DecimalValidator(max_digits, decimal_places))
+        # self.validators.append(CommaSeparatedTypedValidator(el_type))
+
+    def prepare_value(self, value):
+        if isinstance(value, list):
+            return ",".join(str(x) for x in value)
+        return value
 
     def to_python(self, value):
         if value is None:
@@ -38,4 +43,13 @@ class CommaSeparatedTypedField(CharField):
             except Exception as e:
                 raise ValidationError("error item comma-separated-%s value \"%s\"" % (self.el_type.__name__, value))
 
-        return super().to_python(value)
+        # если строка всё же
+        if not isinstance(value, str):
+            raise ValidationError("error value type %s" % type(value))
+        value = value.strip()
+        if not value:  # если не None а пустая, то это пустой список
+            return []
+        try:
+            return [self.el_type(e) for e in value.split(",") if e]
+        except Exception as e:
+            raise ValidationError("error comma-separated-%s value \"%s\"" % (self.el_type.__name__, value))

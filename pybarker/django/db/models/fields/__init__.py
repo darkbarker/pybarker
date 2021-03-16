@@ -41,7 +41,6 @@ class TruncatingCharField(models.CharField):
         return value[:self.max_length] if value else value
 
 
-# TODO проверить, тесты сделать
 class CommaSeparatedTypedField(models.CharField):
     """
     поле для хранения элементов типа в контейнере list, поле текстовое хранятся через разделитель
@@ -58,7 +57,6 @@ class CommaSeparatedTypedField(models.CharField):
         return name, path, args, kwargs
 
     def to_python(self, value):
-        # print("!CommaSeparatedTypedField.to_python", self.name, value, type(value))
         if value is None:
             return None
         # если list, то превращаем в нужный с элементами (+валидация заодно)
@@ -82,7 +80,6 @@ class CommaSeparatedTypedField(models.CharField):
         return self.to_python(value)
 
     def get_prep_value(self, value):
-        # print("get_prep_value", value, type(value))
         if value is None:
             return None
         if not value:  # если что-то заполняли, но не None, то будет пробел в БД вместо NULL, т.е. пустой список
