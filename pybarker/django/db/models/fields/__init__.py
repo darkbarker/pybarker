@@ -84,8 +84,10 @@ class CommaSeparatedTypedField(models.CharField):
             return None
         if not value:  # если что-то заполняли, но не None, то будет пробел в БД вместо NULL, т.е. пустой список
             return ""
+        if isinstance(value, (set, )):  # некоторые типы превратим молча (например, в orm-выражении поставим значение в виде set, почему бы нет)
+            value = list(value)
         if not isinstance(value, list):
-            raise ValidationError("value %s is not list" % value)
+            raise ValidationError("value %s is not list, but %s" % (value, type(value).__name__))
         for v in value:
             try:
                 self.el_type(v)
