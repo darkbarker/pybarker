@@ -6,6 +6,7 @@ except ImportError as exc:
     raise ImportError("Couldn't import redis-py. Are you sure it's installed?") from exc
 
 
+# TODO перенести в redis.py, переименовать в OtpStorage
 class OtpStore(object):
 
     def __init__(self, redis_url, timeout=300, otp_length=4, retry_timeout=60, redis_prefix="otp"):
