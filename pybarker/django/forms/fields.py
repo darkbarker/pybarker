@@ -1,7 +1,14 @@
 import json
 
 from django.core.exceptions import ValidationError
-from django.forms.fields import InvalidJSONInput, JSONField, CharField
+from django.forms.fields import CharField
+try:
+    from django.forms.fields import InvalidJSONInput, JSONField
+    HAS_JSONField = False
+except ImportError:
+    InvalidJSONInput = object
+    JSONField = object
+    HAS_JSONField = True
 
 __all__ = ["ReadableJSONField", "CommaSeparatedTypedField"]
 
@@ -12,11 +19,12 @@ __all__ = ["ReadableJSONField", "CommaSeparatedTypedField"]
 #   formfield_overrides = {
 #     JSONField: {"form_class": ReadableJSONField},
 #   }
-class ReadableJSONField(JSONField):
-    def prepare_value(self, value):
-        if isinstance(value, InvalidJSONInput):
-            return value
-        return json.dumps(value, indent=2, ensure_ascii=False)
+if HAS_JSONField:
+    class ReadableJSONField(JSONField):
+        def prepare_value(self, value):
+            if isinstance(value, InvalidJSONInput):
+                return value
+            return json.dumps(value, indent=2, ensure_ascii=False)
 
 
 # поле формы, в дополнение к models.CommaSeparatedTypedField
