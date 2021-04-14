@@ -4,11 +4,11 @@ from django.core.exceptions import ValidationError
 from django.forms.fields import CharField
 try:
     from django.forms.fields import InvalidJSONInput, JSONField
-    HAS_JSONField = False
+    HAS_JSONField = True
 except ImportError:
     InvalidJSONInput = object
     JSONField = object
-    HAS_JSONField = True
+    HAS_JSONField = False
 
 __all__ = ["ReadableJSONField", "CommaSeparatedTypedField"]
 
