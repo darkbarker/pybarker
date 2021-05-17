@@ -10,7 +10,9 @@ except ImportError:
     JSONField = object
     HAS_JSONField = False
 
-__all__ = ["ReadableJSONField", "CommaSeparatedTypedField"]
+__all__ = ["CommaSeparatedTypedField"]
+if HAS_JSONField:
+    __all__ += ["ReadableJSONField"]
 
 
 # начиная с django 3.1
