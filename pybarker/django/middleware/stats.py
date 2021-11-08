@@ -30,6 +30,8 @@ class StatsMiddleware(MiddlewareMixin):
         for query in querlist:
             dublicates[query] += 1
 
+        duplicates_log = [""] if getattr(settings, "STATS_THRESHOLD_LOG_DUPL", False) else None
+
         response["X-Page-Generation-Duration-ms"] = curtime
         response["X-Page-Generation-Queries-Count"] = quercount
         response["X-Page-Generation-Queries-time"] = quertime
@@ -37,9 +39,12 @@ class StatsMiddleware(MiddlewareMixin):
             if dublicates[dublicate] > 1:
                 # response["X-Page-Generation-Queries-dublicate-%s" % (num + 1)] = "%s ***** %s times" % (dublicate, dublicates[dublicate])
                 response["X-Page-Generation-Queries-dublicate-%s" % (num + 1)] = "%s" % (dublicates[dublicate])
+                if duplicates_log:
+                    duplicates_log.append("%3d: %s" % (dublicates[dublicate], dublicate))
         # for num, query in enumerate(querlist):
         #    response["X-Page-Generation-Queries-%s" % (num + 1)] = query
         # logging
         if curtime > settings.STATS_THRESHOLD_TIME or quercount > settings.STATS_THRESHOLD_QUERIES:
-            logging.getLogger("%s.StatsMiddleware" % __name__).warning("request %s %s too dumb: %s ms, %s queries" % (request.method, request.path, curtime, quercount))
+            duplicates_log = "\n x".join(duplicates_log) if duplicates_log else ""
+            logging.getLogger("%s.StatsMiddleware" % __name__).warning("%s %s is too dumb: %s ms, %s queries%s" % (request.method, request.path, curtime, quercount, duplicates_log))
         return response
