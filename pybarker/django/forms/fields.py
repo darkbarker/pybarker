@@ -23,6 +23,8 @@ if HAS_JSONField:
 #   }
 if HAS_JSONField:
     class ReadableJSONField(JSONField):
+        empty_values = [None, "", ()]  # excluded [] {} because its valid json (generally shouldnt be consided empty)
+
         def prepare_value(self, value):
             if isinstance(value, InvalidJSONInput):
                 return value
