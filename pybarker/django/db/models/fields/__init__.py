@@ -3,11 +3,13 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db import models
 from pybarker.django import forms as pbforms
+from pybarker.utils.searchtext import to_translit_2
 
 __all__ = [
     "CurrencyField",
     "TruncatingCharField",
     "CommaSeparatedTypedField",
+    "ToSearchTextField",
 ]
 
 
@@ -30,6 +32,13 @@ class CurrencyField(models.DecimalField):
 
     def from_db_value(self, value, *args):
         return self.to_python(value)
+
+    def formfield(self, **kwargs):
+        defaults = {
+            "form_class": pbforms.CurrencyFormField,
+        }
+        defaults.update(kwargs)
+        return super().formfield(**defaults)
 
 
 class TruncatingCharField(models.CharField):
@@ -102,3 +111,12 @@ class CommaSeparatedTypedField(models.CharField):
             "form_class": pbforms.CommaSeparatedTypedField,
             **kwargs,
         })
+
+
+class ToSearchTextField(models.TextField):
+    """
+    Trivial TextField subclass that passes values through to_translit automatically.
+    """
+    def get_prep_lookup(self, lookup_type, value):
+        value = super().get_prep_lookup(lookup_type, value)
+        return to_translit_2(value)

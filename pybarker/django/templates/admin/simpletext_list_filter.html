@@ -1,0 +1,30 @@
+{% load i18n %}
+<h3>{% blocktrans with filter_title=title %} By {{ filter_title }} {% endblocktrans %}</h3>
+<ul>
+
+<li class="{% if choices.0.all.selected %}selected{% endif %}">
+   <a href="{{ choices.0.all.query_string|iriencode }}" title="{{ choices.0.all.display }}">{{ choices.0.all.display }}</a>
+</li>
+
+<li class="{% if choices.0.current.value %}selected{% endif %}">
+	<form action="{{ choices.0.current.form_url|iriencode }}" method="get">
+		{% for n,v in choices.0.current.hidden_inputs.items %}
+			<input type="hidden" name="{{ n }}" value="{{ v }}">
+		{% endfor %}
+		{% if choices.0.current.notfound %}
+			[?]
+		{% endif %}
+		<input name="{{ choices.0.current.param_name }}" value="{{ choices.0.current.value|default:'' }}" style="width: 100px;">
+		<button type="submit">=></button>
+	</form>
+</li>
+
+{% if choices.0.empty %}
+	<li class="{% if choices.0.empty.selected %}selected{% endif %}">
+    <a href="{{ choices.0.empty.query_string|iriencode }}" title="{{ choices.0.empty.display }}">{{ choices.0.empty.display }}</a>
+    </li>
+{% endif %}
+
+
+</ul>
+
