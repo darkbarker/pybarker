@@ -29,6 +29,12 @@ def _get_cache():
     return caches["default"]  # TODO настройку сделать
 
 
+# текст дебажный
+def _debug(debug, text, *args):
+    if debug:
+        print("decachetive: %s" % text.format(*args))
+
+
 # генерит имя кеша ключей, список от одного до нескольких строк
 # обычно один: cache_key_name + конкатенеция суффикса
 # может быть несколько, если в суфиксте LISTEDSUFFIX - один (и только один) из элементов суффикса - list тогда он
@@ -74,8 +80,7 @@ def purge_cache(cached_function_or_keyname, *args):
 
     cache_keys_full = _make_cache_keys(cache_key_prefix, cache_key_suffix_emul)
 
-    if False:
-        print("decachetive: purge_cache: rem_cache(%s)" % cache_keys_full)
+    _debug(False, "purge_cache: rem_cache({})", cache_keys_full)
     _get_cache().delete_many(cache_keys_full)
 
 
@@ -120,8 +125,7 @@ def _connect_invalidator(depends, cache_key_prefix, debug):
         trig_sender = depend[0]
         trig_suffix_lambda = depend[1]
 
-        if debug:
-            print(" decachetive: connect_invalidator: sender=%s" % trig_sender)
+        _debug(debug, "= connect_invalidator: sender={}", trig_sender)
 
         # инвалидатор, использует окружение, но замыкания разрулят
         # но не разрулится trig_suffix_lambda который надо задефолтить,
@@ -131,19 +135,16 @@ def _connect_invalidator(depends, cache_key_prefix, debug):
             instance = kwargs.pop("instance", None)
             if not instance:
                 raise Exception("no instance in signal data")
-            if debug:
-                signal = kwargs.get("signal")
-                sender = kwargs.get("sender")
-                print("cache_invalidator: signal #%s, sender: %s" % (id(signal), sender))
+            signal = kwargs.get("signal")
+            sender = kwargs.get("sender")
+            _debug(debug, "cache_invalidator: signal #{}, sender: {}", id(signal), sender)
             cache_key_suffix = _one_or_tuple_to_list(trig_suffix_lambda(instance)) if trig_suffix_lambda else []
             cache_keys_full = _make_cache_keys(cache_key_prefix, cache_key_suffix)
-            if debug:
-                print("decachetive: rem_cache(%s)" % cache_keys_full)
+            _debug(debug, "rem_cache({})", cache_keys_full)
             _get_cache().delete_many(cache_keys_full)
 
         for sign in trig_signals:
-            if debug:
-                print("  decachetive: connect signal #%s on sender %s" % (id(sign), trig_sender))
+            _debug(debug, "== connect signal #{} on sender {}", id(sign), trig_sender)
             sign.connect(cache_invalidator, sender=trig_sender, weak=False)  # dispatch_uid="%s%s" % (FULL cache_key, triggers.index(t)
 
 
@@ -175,8 +176,7 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
         # типа полное имя оборачиваемой функции/метода, префикс ключа, или ключ без суффикса
         cache_key_prefix = "decachetive::%s" % (keyname or _make_func_id(func))
 
-        if debug:
-            print("decachetive: cache_key_prefix: %s" % cache_key_prefix)
+        _debug(debug, "cache_key_prefix: {}", cache_key_prefix)
 
         @wraps(func)
         def cached_func(*args, **kwargs):
@@ -191,15 +191,13 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
             # получаем по полному имени ключа из кеша и если нет, то запрашивамем и сохраняем
             cache = _get_cache()
             fromcache = cache.get(cache_key_full)
-            if debug:
-                print("decachetive: fromcache(%s): %s" % (cache_key_full, repr(fromcache)))
+            _debug(debug, "fromcache({}): {}", cache_key_full, repr(fromcache))
             if fromcache is None:
                 fromcache = func(*args, **kwargs)
                 if fromcache is None:
                     fromcache = None_VALUE
                 cache.set(cache_key_full, fromcache, timeout)
-                if debug:
-                    print("decachetive: cache set (%s, to=%s): %s" % (cache_key_full, timeout, repr(fromcache)))
+                _debug(debug, "cache set ({}, to={}): {}", cache_key_full, timeout, repr(fromcache))
             if isinstance(fromcache, QuerySet):
                 raise Exception("QuerySet is cached incorrectly, wrap it with a list")
             if fromcache == None_VALUE:
