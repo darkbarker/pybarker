@@ -116,6 +116,10 @@ def _check_depends(depends):
 
 # depends: [("ncr.Ncr", lambda ncr: ncr.pk), ("ncr.NcrItem", lambda ncritem: ncritem.ncr_id)], из них делаются
 # cache_key_prefix - имя ключа без суффикса
+# TODO проверить что 1) имя модели корректное,
+# 2) тупл-сигнатура в инвалидаторах соответствует сигнатуре suffix=...,
+# 3) сигнатура лямбды - один параметр (инстанс)
+# 4) сигнатура suffix равна сигнатуре метода? (или это не имеет значения? проверить и описать)
 def _connect_invalidator(depends, cache_key_prefix, debug):
 
     depends = _check_depends(depends)
@@ -198,6 +202,7 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
                     fromcache = None_VALUE
                 cache.set(cache_key_full, fromcache, timeout)
                 _debug(debug, "cache set ({}, to={}): {}", cache_key_full, timeout, repr(fromcache))
+            # TODO перенести выше перед вставкой в кеш а не после взятия же?
             if isinstance(fromcache, QuerySet):
                 raise Exception("QuerySet is cached incorrectly, wrap it with a list")
             if fromcache == None_VALUE:
