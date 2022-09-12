@@ -84,6 +84,13 @@ def purge_cache(cached_function_or_keyname, *args):
     _get_cache().delete_many(cache_keys_full)
 
 
+# возвращает кол-во параметров в переданном каллабле
+def _get_params_count(callabl):
+    sig = inspect.signature(callabl)
+    params = sig.parameters
+    return len(params)
+
+
 # конвертация до полного и проверка на валидность значения depend из decachetived
 # (формат зависимостей может быть сокращён - опущены части, не быть list итд, см. описание decachetived)
 # возвращает полный формат:
@@ -106,23 +113,29 @@ def _check_depends(depends):
                 pass
             else:
                 raise TypeError("wrong depend tuple-format: %s" % repr(depend))
+        # первый параметр - модель, в виде строки или класса
         if not isinstance(depend[0], str) and not inspect.isclass(depend[0]):
             raise TypeError("wrong depend format: not class-or-str arg-1: %s" % repr(depend))
-        if depend[1] is not None and not callable(depend[1]):
+        # второй параметр либо пусто, либо лямбда
+        depend_lambda = depend[1]
+        if depend_lambda is not None and not callable(depend_lambda):
             raise TypeError("wrong depend format: not callable arg-2: %s" % repr(depend))
+        # проверка: сигнатура лямбды - один параметр (инстанс)
+        if depend_lambda:
+            depend_lambda_param_count = _get_params_count(depend_lambda)
+            if depend_lambda_param_count != 1:
+                raise TypeError("wrong depend format: callable arg-2 (%s) signature not one-param, but %s" % (repr(depend), depend_lambda_param_count))
         _depends.append(depend)
     return _depends
 
 
 # depends: [("ncr.Ncr", lambda ncr: ncr.pk), ("ncr.NcrItem", lambda ncritem: ncritem.ncr_id)], из них делаются
 # cache_key_prefix - имя ключа без суффикса
-# TODO проверить что 1) имя модели корректное,
-# 2) тупл-сигнатура в инвалидаторах соответствует сигнатуре suffix=...,
-# 3) сигнатура лямбды - один параметр (инстанс)
+# TODO проверить что
+# 1) имя модели корректное,
+# 2) тупл-сигнатура в инвалидаторах соответствует сигнатуре suffix=..., (или оба отстутствуют или оба одинаковые выдают сигнатуры?)
 # 4) сигнатура suffix равна сигнатуре метода? (или это не имеет значения? проверить и описать)
 def _connect_invalidator(depends, cache_key_prefix, debug):
-
-    depends = _check_depends(depends)
 
     for depend in depends:
         trig_signals = [signals.post_save, signals.post_delete]
@@ -198,13 +211,12 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
             _debug(debug, "fromcache({}): {}", cache_key_full, repr(fromcache))
             if fromcache is None:
                 fromcache = func(*args, **kwargs)
+                if isinstance(fromcache, QuerySet):
+                    raise Exception("QuerySet is cached incorrectly, wrap it with a list")
                 if fromcache is None:
                     fromcache = None_VALUE
                 cache.set(cache_key_full, fromcache, timeout)
                 _debug(debug, "cache set ({}, to={}): {}", cache_key_full, timeout, repr(fromcache))
-            # TODO перенести выше перед вставкой в кеш а не после взятия же?
-            if isinstance(fromcache, QuerySet):
-                raise Exception("QuerySet is cached incorrectly, wrap it with a list")
             if fromcache == None_VALUE:
                 return None
             return fromcache
@@ -213,7 +225,7 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
         cached_func._decachetive_origfunc = func
 
         if depend:
-            _connect_invalidator(depend, cache_key_prefix, debug)
+            _connect_invalidator(_check_depends(depend), cache_key_prefix, debug)
 
         return cached_func
     return decorator

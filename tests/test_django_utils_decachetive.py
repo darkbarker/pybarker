@@ -1,10 +1,13 @@
+import os
 import unittest
 from time import time, sleep
 
 import django
-django.setup()
+os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.django_test_settings'  # noqa
+django.setup()  # noqa
 
 from django.db.models import signals
+from django.db.models.query import QuerySet
 
 from pybarker.django.utils import decachetive
 
@@ -45,7 +48,7 @@ class TestCache(unittest.TestCase):
         # sic! вообще не должно сгенериться ключей, ибо у нас формат ключей "keyname::1::ххх", а генерить не из чего
         self.assertEqual(decachetive._make_cache_keys("keyname", [1, []]), [])
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ValueError):  # "LISTEDSUFFIX must be once"
             decachetive._make_cache_keys("keyname", [1, [2, 3], [4]])
 
         self.assertEqual(decachetive._make_cache_keys("keyname", [1, None]), ["keyname::1::None"])
@@ -263,6 +266,44 @@ class TestCache(unittest.TestCase):
         with self.assertRaises(TypeError) as e:
             decachetive._check_depends([("model.Model1", None, "third")])
         self.assertIn("wrong depend tuple-format", str(e.exception))
+
+    # проверки на проверку валидности сигнатур итд
+    def test_check_depends_2(self):
+
+        class Model1:
+            pk1 = None
+
+        # сигнатура лямбды - один параметр (инстанс)
+
+        @decachetive.decachetived(
+            timeout=1,
+            suffix=lambda n: n,
+            depend=[(Model1, lambda m1: m1.pk1)],
+        )
+        def _normal_1(n):
+            return time() + n
+
+        with self.assertRaises(TypeError) as e:
+            @decachetive.decachetived(
+                timeout=1,
+                suffix=lambda n: n,
+                depend=[(Model1, lambda m1, m11: m1.pk1)],
+            )
+            def _error_2_param(n):
+                return time() + n
+        self.assertIn("wrong depend format", str(e.exception))
+        self.assertIn("not one-param, but 2", str(e.exception))
+
+        with self.assertRaises(TypeError) as e:
+            @decachetive.decachetived(
+                timeout=1,
+                suffix=lambda n: n,
+                depend=[(Model1, lambda: 666)],
+            )
+            def _error_0_param(n):
+                return time() + n
+        self.assertIn("wrong depend format", str(e.exception))
+        self.assertIn("not one-param, but 0", str(e.exception))
 
     def test_depend(self):
 
@@ -603,6 +644,23 @@ class TestCache(unittest.TestCase):
         self.assertNotEqual(val1_1, val1_2)
         self.assertEqual(val2_1, val2_2)
         self.assertNotEqual(val3_1, val3_2)
+
+    # ошибка кеширования кверисета должна быть
+    def test_fail_queryset(self):
+
+        @decachetive.decachetived(
+            timeout=1,
+        )
+        def _get_queryset():
+            return QuerySet()
+
+        # дважды подряд чтобы убедиться что и не кешируется и ругается ДО
+        with self.assertRaises(Exception) as e:
+            _get_queryset()
+        self.assertIn("incorrectly", str(e.exception))
+        with self.assertRaises(Exception) as e:
+            _get_queryset()
+        self.assertIn("incorrectly", str(e.exception))
 
 
 if __name__ == "__main__":
