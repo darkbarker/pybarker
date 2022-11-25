@@ -46,3 +46,8 @@ def truncate_smart(value: str, max_length: int, placeholder: str="...") -> str:
         return value[:max_length]  # dumb truncate
     halflen = (max_length - phlen) // 2
     return value[:halflen] + placeholder + value[-(max_length - phlen - halflen):]  # not "-halflen" because may be //2-rounding
+
+
+def unicode_strike(text: str) -> str:
+    """ зачёркивание текста юникодом """
+    return "\u0336".join(text) + "\u0336" if text else text
