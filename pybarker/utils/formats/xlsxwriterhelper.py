@@ -29,21 +29,20 @@ def convert_val_to_simple(token):
     return token
 
 
-# может нарисовать квадратную таблицу с некоторой сложности шапкой
+# может нарисовать прямоугольную таблицу с некоторой сложности шапкой
 # возвращает BytesIO открытый и сброшенный к началу
-def make_excel(header_data, header_default_style=None, table_start_cell=None, table_data=None):
+def make_excel(header_data, header_default_format=None, table_start_cell=None, table_data=None):
     """
     header_data - итерабл таких элементов:
     [
         ['A1:B2', '№'],
-        ['R2', 'забраковано', (опции)],
+        ['R2', 'забраковано', {опции}],
     ]
     опции - набор свойств:
-    * целое число: ширина
+    * {"width": целое-число-ширина-столбца, "cell_format": {"align": "left", "bg_color": red, ...}}
 
-    header_default_style - набор свойств общих для ячеек, поддерживаются:
-    * center
-    * vcenter
+    header_default_format - набор свойств общих для ячеек заголовка:
+    * {"align": "center", "valign": "vcenter", ...}
 
     table_start_cell - ячейка с которой начинается рисование таблицы (вправо-вниз)
 
@@ -56,10 +55,10 @@ def make_excel(header_data, header_default_style=None, table_start_cell=None, ta
     ]
     """
 
-    if isinstance(header_data, list) and header_default_style is None and table_start_cell is None and table_data is None:
+    if isinstance(header_data, list) and header_default_format is None and table_start_cell is None and table_data is None:
         sheets = header_data
-    elif header_data is not None and header_default_style is not None and table_start_cell is not None and table_data is not None:
-        sheets = [(None, (header_data, header_default_style, table_start_cell, table_data))]
+    elif header_data is not None and header_default_format is not None and table_start_cell is not None and table_data is not None:
+        sheets = [(None, (header_data, header_default_format, table_start_cell, table_data))]
     else:
         raise ValueError("must be 4 params or list of tuples")
 
@@ -67,46 +66,48 @@ def make_excel(header_data, header_default_style=None, table_start_cell=None, ta
     output = io.BytesIO()
 
     # он всё равно будет юзать временные файлы, если не нужно - сделать 'in_memory'
-    workbook = xlsxwriter.Workbook(output, {"default_date_format": "dd.mm.yyyy"})
+    workbook = xlsxwriter.Workbook(output, {"default_date_format": "dd.mm.yyyy", "remove_timezone": True})
     for sheeet in sheets:
         sheet_name, sheet_params = sheeet
-        header_data, header_default_style, table_start_cell, table_data = sheet_params
+        header_data, header_default_format, table_start_cell, table_data = sheet_params
 
         worksheet = workbook.add_worksheet(name=sheet_name)
 
-        header_def_style = set()
-        header_def_format = None
-        if header_default_style:
-            header_def_style = set(header_default_style)
-            h = {}
-            if "center" in header_def_style:
-                h["align"] = "center"
-            if "vcenter" in header_def_style:
-                h["valign"] = "vcenter"
-            header_def_format = workbook.add_format(h)
+        header_def_format = workbook.add_format(header_default_format) if header_default_format else None
 
+        # write header
         for celldata in header_data:
             try:
                 cell, title, options = celldata
+                if options is None:
+                    options = {}
             except ValueError as _:
                 cell, title = celldata
-                options = []
+                options = {}
             # prepare options
-            width = None
-            for option in options:
-                if isinstance(option, int):
-                    width = option
-            # cell
-            if ":" in cell:  # merged
-                worksheet.merge_range(cell, title, cell_format=header_def_format)
+            width = options.get("width", None)
+            # "cell_format" prepare
+            if "cell_format" in options:
+                # если задан "cell_format", то мы в любом случае будем юзать свой format вместо header_def_format, но
+                # если был задан общий - мы его используем для основы создания своего формата
+                header_cell_format = header_default_format or {}
+                header_cell_format.update(options["cell_format"])
+                header_cell_format = workbook.add_format(header_cell_format)
             else:
-                worksheet.write(cell, title, header_def_format)
+                header_cell_format = None
+            # cell
+            if ":" in cell:  # if range ("merged")
+                worksheet.merge_range(cell, title, cell_format=header_cell_format or header_def_format)
+            else:
+                worksheet.write(cell, title, header_cell_format or header_def_format)
             # width
             if width:
-                # имя столбца, если несколько то первого, несколько букв тоже может быть
+                # имя столбца, если несколько то первого только мы шириной управляем, несколько букв тоже может быть
+                # (ширина ставится на "столбец" в виде "A:A")
                 firstwcell = re.findall("[a-zA-Z]+", cell)[0]  # 'AA1:AA2' -> ['AA', 'AA']
-                worksheet.set_column("%s:%s" % (firstwcell, firstwcell), width)
+                worksheet.set_column("%s:%s" % (firstwcell, firstwcell), width=width)
 
+        # write data
         table_start_row, table_start_col = xl_cell_to_rowcol(table_start_cell)
         for table_row in table_data:
             # worksheet.write_row(table_start_row, table_start_col, table_row, cell_format=None)
