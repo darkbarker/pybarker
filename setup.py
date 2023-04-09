@@ -9,4 +9,5 @@ setup(
     packages=find_packages(exclude=["tests"]),
     include_package_data=True,
     long_description=open(join(dirname(__file__), "README.md")).read(),
+    install_requires=["unidecode"],
 )
