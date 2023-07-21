@@ -5,6 +5,7 @@ from django.db import migrations, models
 from django.conf import settings
 import django.db.models.deletion
 import django.utils.timezone
+from pybarker.contrib.modelshistory.utils import get_mh_user_model
 
 
 class Migration(migrations.Migration):
@@ -12,7 +13,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        migrations.swappable_dependency(settings.MODELSHISTORY_USER_MODEL),
+        migrations.swappable_dependency(get_mh_user_model()),
         ('contenttypes', '0002_remove_content_type_name'),
     ]
 
@@ -32,7 +33,7 @@ class Migration(migrations.Migration):
                 ('item_object_repr', models.CharField(blank=True, max_length=200, null=True, verbose_name='item object repr')),
                 ('comment', models.CharField(blank=True, max_length=256, null=True, verbose_name='comment')),
                 ('content_type', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='contenttypes.ContentType', verbose_name='content type')),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=settings.MODELSHISTORY_USER_MODEL, verbose_name='user')),
+                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='+', to=get_mh_user_model(), verbose_name='user')),
             ],
             options={
                 'ordering': ('-action_time',),

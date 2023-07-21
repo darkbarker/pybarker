@@ -98,7 +98,7 @@ class HistoryModelEntryManager(models.Manager):
 class HistoryModelEntry(models.Model):
     action_time = models.DateTimeField(_("action time"), default=timezone.now, editable=False, db_index=True)
 
-    user = models.ForeignKey(settings.MODELSHISTORY_USER_MODEL, models.SET_NULL, blank=True, null=True, related_name="+", verbose_name=_("user"))
+    user = models.ForeignKey(get_mh_user_model(), models.SET_NULL, blank=True, null=True, related_name="+", verbose_name=_("user"))
 
     # контент тайп сущности логируемой
     content_type = models.ForeignKey(ContentType, models.PROTECT, verbose_name=_("content type"))
