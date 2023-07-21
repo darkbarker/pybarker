@@ -41,6 +41,8 @@ def get_mh_user_model():
     # see get_user_model()
     try:
         return django_apps.get_model(settings.MODELSHISTORY_USER_MODEL, require_ready=False)
+    except AttributeError:
+        raise ImproperlyConfigured("settings.MODELSHISTORY_USER_MODEL must be set")
     except ValueError:
         raise ImproperlyConfigured("MODELSHISTORY_USER_MODEL must be of the form 'app_label.model_name'")
     except LookupError:
