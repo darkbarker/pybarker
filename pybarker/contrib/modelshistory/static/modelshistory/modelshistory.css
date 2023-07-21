@@ -1,0 +1,16 @@
+.mhaction_1 {
+    padding-left: 16px;
+    background: url(icon-addlink.svg) 0 1px no-repeat;
+}
+.mhaction_2 {
+    padding-left: 16px;
+    background: url(icon-changelink.svg) 0 1px no-repeat;
+}
+.mhaction_3 {
+    padding-left: 16px;
+    background: url(icon-deletelink.svg) 0 1px no-repeat;
+}
+.mhaction_4 {
+    padding-left: 16px;
+    background: url(icon-viewlink.svg) 0 1px no-repeat;
+}

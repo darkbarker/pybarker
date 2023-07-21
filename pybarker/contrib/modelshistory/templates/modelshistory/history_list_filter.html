@@ -1,0 +1,34 @@
+{% load bootstrap3 %} 
+
+	<form method="get" action="">
+		{{ filterform.non_field_errors }}
+		<div class="row row-filter padding-top">
+			<div class="col-md-6">
+  			{# bootstrap_field filterform.specified_content_type #}
+			</div>
+			<div class="col-md-6">
+  			{% bootstrap_field filterform.object %}
+			</div>
+			<div class="col-md-6">
+			{% bootstrap_field filterform.field %}
+			</div>
+		</div>
+		<div class="row row-filter margin-bottom">
+			<div class="col-md-6">
+  			{% bootstrap_field filterform.user %}
+			</div>
+			<div class="col-md-6">
+  			{% bootstrap_field filterform.daterange %}
+			</div>
+			<div class="col-md-6">
+			{% bootstrap_field filterform.action_flag %}
+			</div>
+			<div class="col-md-6">
+			<label class="control-label">&nbsp;</label><br/>
+			<button type="submit" class="btn btn-success" id="id_submit">
+  				<span class="glyphicon glyphicon-search icon-white"></span> Найти
+			</button>
+			<button type="submit" class="btn btn-default" name="reset">Сбросить</button>
+			</div>
+		</div>
+	</form>

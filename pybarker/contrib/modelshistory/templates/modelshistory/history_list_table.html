@@ -1,0 +1,60 @@
+{% load pagination_tags %} 
+
+	{% if entry_set %}
+	
+		{% autopaginate entry_set 50 %}
+	
+		<table class="table table-striped table-hover table-condensed">
+			<tr>
+				<th>Время</th><!--надписи тягать как положено-->
+				<th>Пользователь</th>
+				<th>Объект</th>
+				<th>Действие</th>
+				<th>Поле</th>
+				<th>Старое значение</th>
+				<th>Новое значение</th>
+			</tr>
+		{% for entry in entry_set %}
+			<tr class="{% cycle 'white' 'gray' %}">
+				<td>{% ifchanged entry.action_time %}{{ entry.action_time|date:"d.m.Y H:i:s" }}{% endifchanged %}</td>
+				<td>{% ifchanged entry.action_time %}{{ entry.user|default:'?' }}{% endifchanged %}</td>
+				<td>
+					<span title="{{ entry.content_type }} /// {{ entry.object_id }}">{{ entry.object_repr }}</span>
+					{# для удаления не показываем действия #}
+					<!--
+					{% if entry.action_flag != 3 %}
+					<a href="{% url 'ncr:report-history' %}?object={{ entry.object_id }}" title="фильтр"><img alt="фильтр" src="{{ STATIC_URL }}/filter.png"></a>
+					<a href="{% url 'ncr:report' entry.object_id %}" title="перейти"><img alt="перейти" src="{{ STATIC_URL }}/goto.png"></a>
+					{% endif %}
+					-->
+				</td>
+				<td>
+					<div class="mhaction_{{ entry.action_flag }}">
+					{{ entry.action_flag_title }}
+					{% if entry.comment %}<i>({{ entry.comment }})</i>{% endif %}
+					</div>
+				</td>				
+				<td>
+				    {% if entry.action_flag == 2 %}{# CHANGE #}
+					{% if entry.field %} {{ entry.field_title }} {% endif %}
+					{% endif %}
+				</td>
+				<td>
+				    {% if entry.action_flag == 2 %}{# CHANGE #}
+					{{ entry.oldvalue|default_if_none:"—" }}
+					{% endif %}
+				</td>
+				<td>
+				    {% if entry.action_flag == 2 %}{# CHANGE #}
+					{{ entry.newvalue|default_if_none:"—" }}
+					{% endif %}
+				</td>
+			</tr>
+		{% endfor %}
+		</table>
+		
+		{% paginate %}
+		 
+	{% else %}
+		<div class="alert alert-info margin-top"><b>Записей не найдено.</b> Нет ни одной записи в логах для данных условий поиска.</div>
+	{% endif %}
