@@ -65,7 +65,7 @@ def check_modelshistory(app_configs=None, **kwargs):
 
 
 class ModelshistoryConfig(AppConfig):
-    name = "modelshistory"
+    name = "pybarker.contrib.modelshistory"
     verbose_name = "models history"
 
     def ready(self):
