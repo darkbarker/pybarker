@@ -135,11 +135,16 @@ class HistoryModelEntry(models.Model):
         return ACTION_FLAGS[self.action_flag] if self.action_flag in ACTION_FLAGS else "?"
 
     def field_title(self):
+        if self.field is None:
+            return None
         tracker = _tracker_cache[self.content_type.model_class()]
         return tracker.get_fields_title().get(self.field, "?%s?" % self.field)
 
     def __str__(self):
-        return "<HistoryModelEntry object_id:%s field:%s>" % (self.object_id, self.field)
+        return f"#{self.object_id} {self.action_flag_title()} {self.field if self.action_flag == CHANGE else ''}"
+
+    def __repr__(self):
+        return f"<history entry object_id:{self.object_id} field:{self.field}>"
 
     def get_edited_object(self):
         """ Returns the edited object represented by this log entry """
