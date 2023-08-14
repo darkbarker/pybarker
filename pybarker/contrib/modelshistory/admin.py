@@ -6,7 +6,7 @@ from pybarker.django.contrib.admin.filters import SimpleTextFilter
 
 
 class HistoryModelEntryAdmin(admin.ModelAdmin):
-    list_display = ("f_action_time", "content_type", "object_repr", "action_flag_title", "f_field", "root_object_id")
+    list_display = ("f_action_time", "content_type", "object_repr", "action_flag_title", "f_field", "root_object_id", "user")
     list_display_links = ("f_action_time", "content_type", "object_repr")
     list_filter = (("content_type", admin.RelatedOnlyFieldListFilter), "action_flag", ("field", SimpleTextFilter), ("root_object_id", SimpleTextFilter))
 
