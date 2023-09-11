@@ -2,12 +2,11 @@ import logging
 
 from django.db import models
 from django.conf import settings
-from django.utils.encoding import smart_str, force_str
-from django.utils import timezone
-from django.utils.translation import gettext_lazy as _
-
 from django.contrib.contenttypes.models import ContentType
-
+from django.utils import timezone
+from django.utils.encoding import smart_str, force_str
+from django.utils.functional import cached_property
+from django.utils.translation import gettext_lazy as _
 from pybarker.django.db.models import TruncatingCharField
 from pybarker.django.middleware import threadrequest
 from pybarker.utils.string import truncate_smart
@@ -42,7 +41,7 @@ _tracker_cache = dict()
 class HistoryModelEntryManager(models.Manager):
     # самый общий метод создания
     def _log_action(self, user_id, content_type_id, object_id, object_repr, action_flag,
-                    field, oldvalue, newvalue, comment, root_object_id):
+                    field, oldvalue, newvalue, comment, root_object_id, root_content_type_id):
         # чтобы для всех записей реально изменённых одним запросом стояла одна и та же временная метка, иначе плывёт на милисекунды
         now = threadrequest.now() or timezone.now()
         try:
@@ -61,18 +60,21 @@ class HistoryModelEntryManager(models.Manager):
 
                 comment=comment,
                 root_object_id=smart_str(root_object_id) if root_object_id is not None else None,
+                root_content_type_id=root_content_type_id,
             )
         except Exception as _:
             logger.exception("error write history model entry: object_repr=%s, field=%s" % (object_repr, field))
 
     # общий метод создания для основной одноуровневой модели
-    def log_action_object(self, user_id, obj, action_flag, field, oldvalue, newvalue, comment, root_object_id):
+    def log_action_object(self, user_id, obj, action_flag, field, oldvalue, newvalue, comment, root_object_id, root_model):
         content_type = ContentType.objects.get_for_model(obj, for_concrete_model=False)
         content_type_id = content_type.pk
         object_id = obj.pk
         object_repr = force_str(obj)
+        root_content_type = ContentType.objects.get_for_model(root_model, for_concrete_model=False)
+        root_content_type_id = root_content_type.pk
         self._log_action(user_id, content_type_id, object_id, object_repr, action_flag,
-                         field, oldvalue, newvalue, comment, root_object_id)
+                         field, oldvalue, newvalue, comment, root_object_id, root_content_type_id)
 
     # возвращает последнюю запись "кто изменил" для поля объекта в виде тупла (user_id, action_time)
     def get_last_changed_user_id(self, obj, field):
@@ -101,7 +103,7 @@ class HistoryModelEntry(models.Model):
     user = models.ForeignKey(settings.MODELSHISTORY_USER_MODEL, models.SET_NULL, blank=True, null=True, related_name="+", verbose_name=_("user"))
 
     # контент тайп сущности логируемой
-    content_type = models.ForeignKey(ContentType, models.PROTECT, verbose_name=_("content type"))
+    content_type = models.ForeignKey(ContentType, models.PROTECT, verbose_name=_("content type"), related_name="+")
     # ссылка на объект_ид сущности (если удалён чтобы не дёргалось и каскадом не удалялос)
     object_id = models.CharField(max_length=32)
     # текстовое представление сущности
@@ -123,6 +125,10 @@ class HistoryModelEntry(models.Model):
     # можно было искать под-итемсы у родительского итемса и они не потерялись, т.е. чтобы дочерние элементы находились
     # в истории родительского. по этому ведётся поиск в общей истории.
     root_object_id = models.CharField(max_length=32)
+    # контент-тайп родительского, теоретически можно вычислить всегда из настроек трекера, но хранится явно чтобы всегда
+    # можно было достоверно отнести записи лога к конкретной root-модели безошибочно (в т.ч. если конфигурация трекеров
+    # меняется, например)
+    root_content_type = models.ForeignKey(ContentType, models.PROTECT, related_name="+")
 
     objects = HistoryModelEntryManager()
 
@@ -149,6 +155,28 @@ class HistoryModelEntry(models.Model):
     def get_edited_object(self):
         """ Returns the edited object represented by this log entry """
         return self.content_type.get_object_for_this_type(pk=self.object_id)
+
+    @cached_property
+    def object_absolute_url(self):
+        model = self.content_type.model_class()
+        if hasattr(model, "get_absolute_url"):
+            try:
+                return self.get_edited_object().get_absolute_url()
+            except Exception:
+                return None
+        return None
+
+
+# вспомогательный класс для двухэтапной обработки ручных логирований
+class RecordsHolder(object):
+    def __init__(self, tracker, records):
+        self.tracker = tracker
+        self.records = records
+
+    def save(self):
+        for record in self.records:
+            # (instance, action_flag, field, oldvalue, newvalue, [comment])
+            self.tracker.make_record(*record)
 
 
 # трекер который добавляет к моделям для их автологирования
@@ -237,6 +265,7 @@ class HistoryModelTracker(object):
         # атрибута "modelshistory_comment" инстансу, некий костыль)
         comment = getattr(instance, "modelshistory_comment", None)
         root_object_id = self._create_root_object_id(instance)
+        root_model = self.root_model
 
         unsaved_copy = getattr(instance, "modelshistory_unsaved_copy", None)
 
@@ -244,7 +273,7 @@ class HistoryModelTracker(object):
             field = None
             oldvalue = None
             newvalue = None
-            HistoryModelEntry.objects.log_action_object(user_id, instance, DELETION, field, oldvalue, newvalue, comment, root_object_id)
+            HistoryModelEntry.objects.log_action_object(user_id, instance, DELETION, field, oldvalue, newvalue, comment, root_object_id, root_model)
 
         # если добавление, то это отдельная запись для наглядности а все изменения даже при ADDITION (т.е. установленное
         # сразу при первом сохранении) логируются ниже как CHANGE
@@ -252,7 +281,7 @@ class HistoryModelTracker(object):
             field = None
             oldvalue = None
             newvalue = None
-            HistoryModelEntry.objects.log_action_object(user_id, instance, ADDITION, field, oldvalue, newvalue, comment, root_object_id)
+            HistoryModelEntry.objects.log_action_object(user_id, instance, ADDITION, field, oldvalue, newvalue, comment, root_object_id, root_model)
 
         if action_flag == ADDITION or action_flag == CHANGE:
             for field in self._fields_included(instance):
@@ -260,17 +289,49 @@ class HistoryModelTracker(object):
                 oldvalue = getattr(unsaved_copy, field.name) if unsaved_copy else None
                 newvalue = getattr(instance, field.name)
                 if self._if_value_really_changed(field, oldvalue, newvalue):
-                    HistoryModelEntry.objects.log_action_object(user_id, instance, CHANGE, field.name, oldvalue, newvalue, comment, root_object_id)
+                    HistoryModelEntry.objects.log_action_object(user_id, instance, CHANGE, field.name, oldvalue, newvalue, comment, root_object_id, root_model)
 
     # создание записи о просмотре, вызывается где-то вручную во вьюшках, например
     def view_record(self, instance, comment=None):
+        return self.make_record(instance, VIEW, None, None, None, comment)
+
+    # создание какой-то записи, для вызова где-то вручную во вьюшках, например
+    def make_record(self, instance, action_flag, field, oldvalue, newvalue, comment=None):
         if instance.pk is not None:
             user = threadrequest.user()
             user_id = user.id if user else None
 
             root_object_id = self._create_root_object_id(instance)
+            root_model = self.root_model
 
-            HistoryModelEntry.objects.log_action_object(user_id, instance, VIEW, None, None, None, comment, root_object_id)
+            HistoryModelEntry.objects.log_action_object(user_id, instance, action_flag, field, oldvalue, newvalue, comment, root_object_id, root_model)
+
+    # массовое создание записей на случай ручного bulk_update, вызывается ДО, получается вирт объект, ПОСЛЕ ему
+    # делается .save(). Разнесено тк иначе инфу не получить, а потом вдруг bulk_update упадёт итд.
+    def make_records_bulk_update(self, objs, fields):
+        # выборка по новым значениям (именно изменённые же передаются в objs)
+        objs_ids = []  # ид для дальнейшей выборки
+        # мэп (id, field) => (instance, newvalue)
+        new_val_map = {}
+        for obj in objs:
+            objs_ids.append(obj.id)
+            for field in fields:
+                new_val_map[(obj.id, field)] = (obj, getattr(obj, field))
+        # старые значения [(instance, action_flag, field, oldvalue, newvalue, [comment])], по сигнатуре make_record
+        records = []
+        old_vals = self.cls.objects.values("id", *fields).filter(id__in=objs_ids)  # cls is our model
+        for old_val in old_vals:
+            # {'id': 666, 'field': ...}
+            o_id = old_val.get("id")
+            for field in fields:
+                n_vals = new_val_map.get((o_id, field))
+                if not n_vals:
+                    logger.error(f"make_records_bulk_update: error n_vals for ({o_id}, {field})")
+                    continue
+                instance, newvalue = n_vals
+                oldvalue = old_val.get(field)
+                records.append((instance, CHANGE, field, oldvalue, newvalue))
+        return RecordsHolder(self, records)
 
     # уточняем реально ли значение поменялось. суть в том, что в начале создания модели например все значения булеанов меняются с None на дефолт
     def _if_value_really_changed(self, field, oldvalue, newvalue):

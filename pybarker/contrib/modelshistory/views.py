@@ -1,6 +1,6 @@
 from django.apps import apps
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseBadRequest, HttpResponse
+from django.http import HttpResponseBadRequest, HttpResponse, Http404
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic.base import View
 
@@ -21,7 +21,10 @@ class HistoryListView(View):
         # в kwargs может быть oid, тогда сразу фильтр по объекту, one-object-mode
         one_object_mode = None
         if "oid" in kwargs:
-            one_object_mode = self.root_model.objects.get(pk=kwargs["oid"])
+            try:
+                one_object_mode = self.root_model.objects.get(pk=kwargs["oid"])
+            except self.root_model.DoesNotExist:
+                raise Http404("объект не найден")
         # нужен ли показ view-записей, в данный момент только staff-ам
         use_action_view = request.user.is_staff
         # создаём форму фильтров (если был передан гет из фильтра, но не с нажатием кнопки сброс)
@@ -42,9 +45,10 @@ class HistoryListView(View):
             # (если не фильтровать, то покажется всё с таким root_object_id, что может быть другие вообще модели)
             # в данный момент немного костыль - надо выбрать все ContentType для всех относящихся к этому родительскому
             # (если выбрать только у root_model например, то итемсы не покажутся)
-            # TODO можно (необходимо ли - подумать) хранить в HistoryModelEntry ещё и root_content_type и фильтровать по нему, чтобы всегда можно было достоверно отнести записи лога к конкретной root-модели безошибочно + возможно в паре с id
+            # TODO тут сейчас по root_content_type по идее надо делать, вместо rootsiblings итд
             # TODO может в фильтр сделать доп.комбо "рут модель-зависимые модели" для уточнения по какой модели родительской или конкретной дочерней или всем (как сейчас) хотим искать
             # TODO на заметку ещё: если указано поле, то можно искать по конкретному content_type
+            # TODO после того как фильтр будет по сущности можно будет фильтрануть из списка как раньше было
             all_models = [tracker.cls for tracker in self.root_model.historylog.get_all_rootsiblings(include_self=True)]
             all_ct = [ContentType.objects.get_for_model(model) for model in all_models]
             entry_set = entry_set.filter(content_type__in=all_ct)
@@ -69,7 +73,7 @@ class HistoryListView(View):
             if not use_action_view:
                 entry_set = entry_set.exclude(action_flag=VIEW)
         else:
-            entry_set = None
+            entry_set = HistoryModelEntry.objects.none()
         return render(request, self.template_name, {"entry_set": entry_set, "filterform": filterform, "root_model": self.root_model, "one_object_mode": one_object_mode}, )
 
 

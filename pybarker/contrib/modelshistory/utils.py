@@ -16,6 +16,8 @@ def smart_value(value):
     t = type(value)
     if t is int:
         return str(value)
+    if t is float:
+        return str(value)
     if t is str:
         return '"%s"' % value
     if t is datetime.date:

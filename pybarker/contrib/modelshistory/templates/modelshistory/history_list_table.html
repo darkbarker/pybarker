@@ -1,8 +1,8 @@
 {% load pagination_tags %} 
 
+	{% autopaginate entry_set 50 %}
+
 	{% if entry_set %}
-	
-		{% autopaginate entry_set 50 %}
 	
 		<table class="table table-striped table-hover table-condensed">
 			<tr>
@@ -20,11 +20,16 @@
 				<td>{% ifchanged entry.action_time %}{{ entry.user|default:'?' }}{% endifchanged %}</td>
 				<td>
 					<span title="{{ entry.content_type }} /// {{ entry.object_id }}">{{ entry.object_repr }}</span>
+					<span class="obj_ct_title">[{{ entry.content_type.name }}]</span>
 					{# для удаления не показываем действия #}
+					{% if entry.action_flag != 3 %}
+						{% if entry.object_absolute_url %}
+							<a href="{{ entry.object_absolute_url }}" title="перейти" target="_blank"><img alt="перейти" src="{{ STATIC_URL }}/goto.png"></a>
+						{% endif %}
+					{% endif %}
 					<!--
 					{% if entry.action_flag != 3 %}
 					<a href="{% url 'ncr:report-history' %}?object={{ entry.object_id }}" title="фильтр"><img alt="фильтр" src="{{ STATIC_URL }}/filter.png"></a>
-					<a href="{% url 'ncr:report' entry.object_id %}" title="перейти"><img alt="перейти" src="{{ STATIC_URL }}/goto.png"></a>
 					{% endif %}
 					-->
 				</td>
