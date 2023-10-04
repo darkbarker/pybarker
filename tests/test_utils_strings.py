@@ -1,9 +1,9 @@
 import unittest
 
-from pybarker.utils.string import truncate_smart
+from pybarker.utils.string import truncate_smart, truncate_utf8, truncate_utf8_filename
 
 
-class TestMediaServerUtil(unittest.TestCase):
+class TestUtils(unittest.TestCase):
 
     def assertTrunc(self, value, max_length, placeholder, optvals):
         if not isinstance(optvals, list):
@@ -67,6 +67,57 @@ class TestMediaServerUtil(unittest.TestCase):
 
         self.assertTrunc(VAL, 26, PH, [VAL])
         self.assertTrunc(VAL, 11, PH, [VAL[:11]])
+
+    def test_truncate_utf8(self):
+        self.assertEqual(truncate_utf8("test", 5), "test")
+        self.assertEqual(truncate_utf8("test", 4), "test")
+        self.assertEqual(truncate_utf8("test", 2), "te")
+        self.assertEqual(truncate_utf8("test", 0), "")
+
+        self.assertEqual(truncate_utf8("тест", 4), "те")  # тест = 8 utf8-bytes
+        self.assertEqual(truncate_utf8("тест", 6), "тес")
+        self.assertEqual(truncate_utf8("тест", 8), "тест")
+
+        self.assertEqual(truncate_utf8("тест", 3), "т")  # те=4, т=2 utf8-bytes
+        self.assertEqual(truncate_utf8("тест", 1), "")
+
+        self.assertEqual(truncate_utf8("test", -1), "")
+
+    def test_truncate_utf8_filename(self):
+        self.assertEqual(truncate_utf8_filename("test", 5), "test")
+        self.assertEqual(truncate_utf8_filename("test", 4), "test")
+        self.assertEqual(truncate_utf8_filename("test", 2), "te")
+        self.assertEqual(truncate_utf8_filename("test", 0), "")
+
+        self.assertEqual(truncate_utf8_filename("test.txt", 8), "test.txt")
+        self.assertEqual(truncate_utf8_filename("test.txt", 7), "tes.txt")
+        self.assertEqual(truncate_utf8_filename("test.txt", 5), "t.txt")
+        self.assertEqual(truncate_utf8_filename("test.txt", 4), ".txt")
+        self.assertEqual(truncate_utf8_filename("test.txt", 3), ".tx")
+        self.assertEqual(truncate_utf8_filename("test.txt", 2), ".t")
+        self.assertEqual(truncate_utf8_filename("test.txt", 1), ".")
+        self.assertEqual(truncate_utf8_filename("test.txt", 0), "")
+
+        self.assertEqual(truncate_utf8_filename("тест.txt", 12), "тест.txt")
+        self.assertEqual(truncate_utf8_filename("тест.txt", 11), "тес.txt")
+        self.assertEqual(truncate_utf8_filename("тест.txt", 10), "тес.txt")
+        self.assertEqual(truncate_utf8_filename("тест.txt", 6), "т.txt")
+        self.assertEqual(truncate_utf8_filename("тест.txt", 5), ".txt")
+        self.assertEqual(truncate_utf8_filename("тест.txt", 4), ".txt")
+        self.assertEqual(truncate_utf8_filename("test.txt", 3), ".tx")
+        self.assertEqual(truncate_utf8_filename("test.txt", 1), ".")
+        self.assertEqual(truncate_utf8_filename("test.txt", 0), "")
+
+        # cyr externsion ignore
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 12), "тест.т")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 11), "тест.т")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 10), "тест.")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 6), "тес")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 5), "те")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 4), "те")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 3), "т")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 1), "")
+        self.assertEqual(truncate_utf8_filename("тест.тхт", 0), "")
 
 
 if __name__ == "__main__":

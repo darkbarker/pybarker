@@ -1,8 +1,27 @@
+import re
 
 
 # обрезка юникодной строки до указанной длины в байтах
 def truncate_utf8(unicode_str, maxsize):
+    maxsize = 0 if maxsize < 0 else maxsize
     return str(unicode_str.encode('utf-8')[:maxsize], 'utf-8', errors="ignore")
+
+
+# отличие от truncate_utf8 в попытке сохранить расширение, а отрезать лишнее до него
+# расширение == латинское/цифры после точки не длиннее 8 (8 изниоткуда, условно)
+# если maxsize меньше длины расширения, то последним подрезается расширение так же с конца
+def truncate_utf8_filename(filename, maxsize):
+    maxsize = 0 if maxsize < 0 else maxsize
+    m = re.match("^.*(\.[a-zA-Z0-9]{1,8})$", filename)
+    if m:
+        ext = m.group(1)
+        len_ext = len(ext)
+        if len_ext >= maxsize:  # only ext will remain
+            return truncate_utf8(ext, maxsize)
+        fname = filename[:-len_ext]
+        return truncate_utf8(fname, maxsize - len_ext) + ext
+    # if no ext -> truncate_utf8
+    return truncate_utf8(filename, maxsize)
 
 
 def levenshtein_distance(a, b):
