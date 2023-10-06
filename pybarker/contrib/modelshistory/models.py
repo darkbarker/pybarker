@@ -196,13 +196,16 @@ class HistoryModelTracker(object):
     #   подразумевается что сам этот класс (рекомендуется задавать явно "self", для прозрачности)
     # внимание: root_model+root_id подразумевается парное указание: родительской модели и получение айдишника из
     # инстанса той же самой(!) родительской модели.
-    def __init__(self, excluded_fields=None, included_fields=None, root_id=None, root_model=None):
+    # * manager - можно указать имя атрибута менеджера в модели который надо использовать для get старого значения, если
+    #   он отличается от дефолтного (полезно при всяких soft-delete-хаках итд)
+    def __init__(self, excluded_fields=None, included_fields=None, root_id=None, root_model=None, manager=None):
         if root_id is not None and not callable(root_id):
             raise ValueError("root_id must be callable")
         self.excluded_fields = excluded_fields
         self.included_fields = included_fields
         self.create_root_id = root_id
         self.root_model = root_model
+        self._manager_attr_name = manager
 
     def contribute_to_class(self, cls, name):
         self.manager_name = name
@@ -233,7 +236,7 @@ class HistoryModelTracker(object):
 
     def pre_save(self, instance, **kwargs):
         if not hasattr(instance, "modelshistory_unsaved_copy"):
-            instance.modelshistory_unsaved_copy = instance.__class__._default_manager.get(pk=instance.pk) if instance.pk else None
+            instance.modelshistory_unsaved_copy = self._model_manager(instance).get(pk=instance.pk) if instance.pk else None
         # TODO подумать зачем тут проверяется на наличие modelshistory_unsaved_copy, а если один инстанс два раза сохраним - он дельту неверно посчитает? ведь значение тут старое останется перед вторым сейвом
 
     def post_save(self, instance, created, **kwargs):
@@ -352,3 +355,10 @@ class HistoryModelTracker(object):
         if self.create_root_id is None:
             return instance.pk
         return self.create_root_id(instance)
+
+    # возвращает инстанс менеджера модели по указанному инстансу модели, из настройки или _default_manager
+    def _model_manager(self, instance):
+        if self._manager_attr_name:
+            return getattr(instance.__class__, self._manager_attr_name)
+        else:
+            return instance.__class__._default_manager
