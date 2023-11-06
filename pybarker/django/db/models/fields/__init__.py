@@ -3,6 +3,7 @@ from decimal import Decimal
 from django.core.exceptions import ValidationError, ImproperlyConfigured
 from django.db import models
 from pybarker.django import forms as pbforms
+from pybarker.utils.numbers import round_decimal
 from pybarker.utils.searchtext import to_translit_2
 
 __all__ = [
@@ -10,6 +11,7 @@ __all__ = [
     "TruncatingCharField",
     "CommaSeparatedTypedField",
     "ToSearchTextField",
+    "RoundedDecimalField",
 ]
 
 
@@ -120,3 +122,18 @@ class ToSearchTextField(models.TextField):
     def get_prep_lookup(self, lookup_type, value):
         value = super().get_prep_lookup(lookup_type, value)
         return to_translit_2(value)
+
+
+class RoundedDecimalField(models.DecimalField):
+    """
+    поле самоокругляемое DecimalField, чтобы излишняя точность не ломала валидацию итд
+    """
+
+    def to_python(self, value):
+        value = super().to_python(value)
+        return round_decimal(value, self.decimal_places)
+
+    def formfield(self, **kwargs):
+        defaults = {"form_class": pbforms.RoundedDecimalFormField}
+        defaults.update(kwargs)
+        return super().formfield(**defaults)

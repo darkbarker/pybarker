@@ -1,3 +1,4 @@
+import codecs
 import re
 
 from django import template
@@ -186,3 +187,18 @@ def addstr(arg1, arg2):
 @register.filter(is_safe=True)
 def bbcode(value):
     return mark_safe(bbcoderender(value))
+
+
+# фильтр, возвращает true/false согласно возврату метода startswith на строке
+@register.filter("startswith")
+def startswith_filter(text, starts):
+    if isinstance(text, str):
+        return text.startswith(starts)
+    return False
+
+
+# фильтр, метод split на строке
+@register.filter(name="split")
+def slpit_filter(value, arg, autoescape=True):
+    arg = codecs.decode(arg, "unicode-escape")  # unescape \n etc
+    return value.split(arg)

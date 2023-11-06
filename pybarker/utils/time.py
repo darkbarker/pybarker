@@ -1,4 +1,5 @@
 import calendar
+import datetime
 
 from datetime import date
 
@@ -31,3 +32,38 @@ def age(birthdate):
     """ вычисление возраста по дате """
     today = date.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+
+
+# получение начальной и конечной даты для фильтра год-месяц-день
+# параметры должны (не)задаваться последовательно
+def get_start_end_dates(year=None, month=None, day=None):
+    if year is None:
+        start_date = datetime.date(datetime.MINYEAR, 1, 1)
+        end_date = datetime.date(datetime.MAXYEAR, 12, 31)
+    elif month is None:
+        start_date = datetime.date(year, 1, 1)
+        end_date = datetime.date(year, 12, 31)
+    elif day is None:
+        _fd, cdays = calendar.monthrange(year, month)
+        start_date = datetime.date(year, month, 1)
+        end_date = datetime.date(year, month, cdays)
+    else:
+        start_date = datetime.date(year, month, day)
+        end_date = datetime.date(year, month, day)
+    return start_date, end_date
+
+
+# два datetime.date начало-конец превращаем в список (год,месяц) которые лежат межними
+# ненулевые, второй не меньше первого
+def beg_end_to_mohthrange(beg, end):
+    beg = beg.replace(day=1)
+    end = end.replace(day=1)
+    cal_months = []
+    d = beg
+    while True:
+        cal_months.append((d.year, d.month))
+        if d == end:
+            break
+        _wf, numday = calendar.monthrange(d.year, d.month)
+        d += datetime.timedelta(days=numday)
+    return cal_months

@@ -2,6 +2,7 @@ import json
 
 from django.core.exceptions import ValidationError
 from django.forms.fields import CharField, ChoiceField, DecimalField
+from pybarker.utils.numbers import round_decimal
 try:
     from django.forms.fields import InvalidJSONInput, JSONField
     HAS_JSONField = True
@@ -10,7 +11,7 @@ except ImportError:
     JSONField = object
     HAS_JSONField = False
 
-__all__ = ["CommaSeparatedTypedField", "EmptyChoiceField", "CurrencyFormField"]
+__all__ = ["CommaSeparatedTypedField", "EmptyChoiceField", "CurrencyFormField", "RoundedDecimalFormField"]
 if HAS_JSONField:
     __all__ += ["ReadableJSONField"]
 
@@ -97,3 +98,9 @@ def sanitize_separators(value):
 class CurrencyFormField(DecimalField):
     def to_python(self, value):
         return super().to_python(sanitize_separators(value))
+
+
+class RoundedDecimalFormField(DecimalField):
+    def to_python(self, value):
+        value = super().to_python(value)
+        return round_decimal(value, self.decimal_places)

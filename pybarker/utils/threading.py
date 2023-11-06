@@ -1,3 +1,4 @@
+from functools import wraps
 from threading import Timer, Thread
 
 
@@ -23,3 +24,26 @@ def call_thread(function, *args, **kwargs):
     thread = Thread(target=function, args=args, kwargs=kwargs)
     thread.start()
     return thread
+
+
+def synchronized(lockname):
+    """
+    Декоратор на метод класса, аналог Java synchronized, принимает имя члена класса, которое должно являться каким-либо Lock-ом
+    Usage::
+        def __init__(self):
+            self._lock_signals = threading.Lock()
+            ...
+
+        @synchronized('_lock_signals')
+        def get_signals(self, ...):
+            ...
+    """
+
+    def decorator(method):
+        @wraps(method)
+        def synced_method(self, *args, **kwargs):
+            lock = getattr(self, lockname)
+            with lock:
+                return method(self, *args, **kwargs)
+        return synced_method
+    return decorator

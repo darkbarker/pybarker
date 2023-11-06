@@ -54,3 +54,11 @@ def digits_r2l(n: int):
     while n > 0:
         yield n % 10
         n = n // 10
+
+
+# округление decimal до указанного знака после запятой
+def round_decimal(value, places):
+    if value is not None:
+        # see https://docs.python.org/2/library/decimal.html#decimal.Decimal.quantize for options
+        return value.quantize(decimal.Decimal(10) ** -places)
+    return value
