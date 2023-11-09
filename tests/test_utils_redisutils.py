@@ -43,6 +43,28 @@ class Test(unittest.TestCase):
 
         self.assertEqual(self.redisutils.redis_get_counter(key, timeout=5), 0)
 
+    def test_set_last_user_action(self):
+        user_id = int(time.time())
+
+        lasttime_first = self.redisutils.set_last_user_action(user_id, "action")
+        self.assertEqual(lasttime_first, 0)
+
+        time.sleep(1)
+        lasttime_second = self.redisutils.set_last_user_action(user_id, "action")
+        self.assertNotEqual(lasttime_second, 0)
+
+        lasttime_other = self.redisutils.set_last_user_action(user_id, "action2")
+        self.assertEqual(lasttime_other, 0)
+
+        time.sleep(2)
+        lasttime_third = self.redisutils.set_last_user_action(user_id, "action")
+        time_on_third = int(time.time())
+        self.assertEqual(lasttime_third - lasttime_second, 1)  # time on second - time on first
+
+        time.sleep(3)
+        lasttime_4 = self.redisutils.set_last_user_action(user_id, "action")
+        self.assertEqual(lasttime_4, time_on_third)  # time on third get now
+
 
 if __name__ == "__main__":
     unittest.main()
