@@ -12,3 +12,15 @@ def get_file_path_from_data(tmpdir, data):
         with open(file_path, "w") as f:
             f.write(data)
     return file_path
+
+
+# преобразуем имена в валидные для всех ос (в основном чтобы винда не падала)
+# иначе получается WindowsError: [Error 123] Синтаксическая ошибка в имени файла,: u'...'
+# с концов тоже пробельные удаляем
+def filename_remove_badchars(value):
+    if not value:
+        return value
+    # \/:*?"<>|+\0
+    for c in "\\/:*?\"<>|+\0":
+        value = value.replace(c, "_")
+    return value.strip()
