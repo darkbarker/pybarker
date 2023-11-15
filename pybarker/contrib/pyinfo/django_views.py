@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 
-from pybarker.contrib.pyinfo import pyinfo as _pyinfo
+from pybarker.contrib.pyinfo.pyinfo import pyinfo as _pyinfo
 
 
 def pyinfo(request):
