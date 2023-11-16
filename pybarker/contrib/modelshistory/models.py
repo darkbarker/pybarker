@@ -215,9 +215,9 @@ class HistoryModelTracker(object):
         models.signals.class_prepared.connect(self.finalize, weak=False)
         self.add_extra_methods(cls)
         """
-        models.signals.pre_save.connect(self.pre_save, sender=cls, weak=False)
-        models.signals.post_save.connect(self.post_save, sender=cls, weak=False)
-        models.signals.post_delete.connect(self.post_delete, sender=cls, weak=False)
+        models.signals.pre_save.connect(self._pre_save, sender=cls, weak=False)
+        models.signals.post_save.connect(self._post_save, sender=cls, weak=False)
+        models.signals.post_delete.connect(self._post_delete, sender=cls, weak=False)
         # если мы сами рутмодель, то там можно написать "self" (иначе там нерезолвится сам класс в своём теле)
         if self.root_model == "self" or self.root_model is None:
             self.root_model = cls
@@ -231,19 +231,17 @@ class HistoryModelTracker(object):
             self._fields_title = {}
             # генерим тайтлы полей
             for field in self._fields_included(self.cls):
-                self._fields_title[field.name] = field.verbose_name
+                self._fields_title[field.name] = field.verbose_name or f"[{field.name}]"  # на случай если verbose_name воткнули спецом ""
         return self._fields_title
 
-    def pre_save(self, instance, **kwargs):
-        if not hasattr(instance, "modelshistory_unsaved_copy"):
-            instance.modelshistory_unsaved_copy = self._model_manager(instance).get(pk=instance.pk) if instance.pk else None
-        # TODO подумать зачем тут проверяется на наличие modelshistory_unsaved_copy, а если один инстанс два раза сохраним - он дельту неверно посчитает? ведь значение тут старое останется перед вторым сейвом
+    def _pre_save(self, instance, **kwargs):
+        instance.modelshistory_unsaved_copy = self._model_manager(instance).get(pk=instance.pk) if instance.pk else None
 
-    def post_save(self, instance, created, **kwargs):
+    def _post_save(self, instance, created, **kwargs):
         if not kwargs.get("raw", False):
             self._create_historical_record(instance, ADDITION if created else CHANGE)
 
-    def post_delete(self, instance, **kwargs):
+    def _post_delete(self, instance, **kwargs):
         self._create_historical_record(instance, DELETION)
 
     def _fields_included(self, model):
@@ -311,7 +309,7 @@ class HistoryModelTracker(object):
 
     # массовое создание записей на случай ручного bulk_update, вызывается ДО, получается вирт объект, ПОСЛЕ ему
     # делается .save(). Разнесено тк иначе инфу не получить, а потом вдруг bulk_update упадёт итд.
-    def make_records_bulk_update(self, objs, fields):
+    def make_records_bulk_update(self, objs, fields, comment=None):
         # выборка по новым значениям (именно изменённые же передаются в objs)
         objs_ids = []  # ид для дальнейшей выборки
         # мэп (id, field) => (instance, newvalue)
@@ -333,7 +331,7 @@ class HistoryModelTracker(object):
                     continue
                 instance, newvalue = n_vals
                 oldvalue = old_val.get(field)
-                records.append((instance, CHANGE, field, oldvalue, newvalue))
+                records.append((instance, CHANGE, field, oldvalue, newvalue, comment))
         return RecordsHolder(self, records)
 
     # уточняем реально ли значение поменялось. суть в том, что в начале создания модели например все значения булеанов меняются с None на дефолт

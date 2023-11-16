@@ -8,6 +8,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from .models import HistoryModelEntry, VIEW
 from .forms import make_HistoryFilterForm
+from .utils import get_ct_for_model_name
 
 
 # вьюшка для отображения списка с историей
@@ -47,7 +48,6 @@ class HistoryListView(View):
             # (если выбрать только у root_model например, то итемсы не покажутся)
             # TODO тут сейчас по root_content_type по идее надо делать, вместо rootsiblings итд
             # TODO может в фильтр сделать доп.комбо "рут модель-зависимые модели" для уточнения по какой модели родительской или конкретной дочерней или всем (как сейчас) хотим искать
-            # TODO на заметку ещё: если указано поле, то можно искать по конкретному content_type
             # TODO после того как фильтр будет по сущности можно будет фильтрануть из списка как раньше было
             all_models = [tracker.cls for tracker in self.root_model.historylog.get_all_rootsiblings(include_self=True)]
             all_ct = [ContentType.objects.get_for_model(model) for model in all_models]
@@ -66,7 +66,11 @@ class HistoryListView(View):
             if f_date2:
                 entry_set = entry_set.filter(action_time__date__lte=f_date2)
             if f_field:
-                entry_set = entry_set.filter(field=f_field)
+                # если указано поле, то оно соответствует конкретной модели, т.е. искать доп по конкретному
+                # content_type, а не только по названию поля
+                f_field_model, f_field = f_field  # ('crm.project', 'tender_flag')
+                ct = get_ct_for_model_name(f_field_model)
+                entry_set = entry_set.filter(field=f_field, content_type=ct)
             if f_action_flag:
                 entry_set = entry_set.filter(action_flag=f_action_flag)
             # для без-view такие записи в любом случае исключаем

@@ -33,7 +33,9 @@ def make_HistoryFilterForm(modelclass, model_autocomplete_url, one_object_mode=N
     )
     """
     def _add_choices(tracker):
-        choice_group_items = [(k, str(v)) for k, v in tracker.get_fields_title().items()]
+        # поля предваряем именем модели, чтобы различать в фильтре одинаковые имена полей
+        model_name = get_model_name(tracker.cls)
+        choice_group_items = [(f"{model_name}:{k}", str(v)) for k, v in tracker.get_fields_title().items()]
         choice_group_header = tracker.cls._meta.verbose_name
         fieldchoices.append((choice_group_header, choice_group_items))
 
@@ -73,5 +75,14 @@ def make_HistoryFilterForm(modelclass, model_autocomplete_url, one_object_mode=N
                 return one_object_mode
             else:
                 return self.cleaned_data.get("object")
+
+        # return None or tuple(model class name, field name)
+        def clean_field(self):
+            field = self.cleaned_data.get("field")
+            try:
+                f_model, f_field = field.split(":")
+            except Exception:
+                return None
+            return f_model, f_field
 
     return HistoryFilterForm
