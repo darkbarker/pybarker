@@ -28,9 +28,9 @@ def date_plus_months(dt, month):
     return date(y, m, d)
 
 
-def age(birthdate):
-    """ вычисление возраста по дате """
-    today = date.today()
+def age(birthdate, targetdate=None) -> int:
+    """ вычисление возраста по дате рождения (на указанную дату или now если не передано) """
+    today = targetdate or date.today()
     return today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
 
 
