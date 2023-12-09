@@ -1,3 +1,4 @@
+import getpass
 import os
 import sys
 import pwd
@@ -264,7 +265,13 @@ def section_os_internals():
         data.append(('Controlling terminal', os.ctermid()))
 
     if hasattr(os, 'getlogin'):  # Availability: Unix, Windows.
-        data.append(('Login', os.getlogin()))
+        try:
+            data.append(('Login', os.getlogin()))
+        except Exception:  # OSError: [Errno 6] No such device or address (if no have controlling terminal etc)
+            data.append(('Login', "?"))
+
+    if hasattr(getpass, 'getuser'):  # Availability: not Emscripten, not WASI.
+        data.append(('User', getpass.getuser()))
 
     if hasattr(os, 'get_exec_path'):  # New in version 3.2.
         data.append(('Exec path', os.get_exec_path()))
