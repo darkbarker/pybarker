@@ -39,7 +39,11 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
         ['R2', 'забраковано', {опции}],
     ]
     опции - набор свойств:
-    * {"width": целое-число-ширина-столбца, "cell_format": {"align": "left", "bg_color": red, ...}}
+    * {
+        "width": целое-число-ширина-столбца,
+        "height": целое-число-высота-строки (достаточно установить для одной ячейки, применится ко всей строке)
+        "cell_format": {"align": "left", "bg_color": red, ...}
+       }
 
     header_default_format - набор свойств общих для ячеек заголовка:
     * {"align": "center", "valign": "vcenter", ...}
@@ -72,7 +76,6 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
         header_data, header_default_format, table_start_cell, table_data = sheet_params
 
         worksheet = workbook.add_worksheet(name=sheet_name)
-
         header_def_format = workbook.add_format(header_default_format) if header_default_format else None
 
         # write header
@@ -86,6 +89,7 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
                 options = {}
             # prepare options
             width = options.get("width", None)
+            height = options.get("height", None)
             # "cell_format" prepare
             if "cell_format" in options:
                 # если задан "cell_format", то мы в любом случае будем юзать свой format вместо header_def_format, но
@@ -107,10 +111,13 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
                 firstwcell = re.findall("[a-zA-Z]+", cell)[0]  # 'AA1:AA2' -> ['AA', 'AA']
                 worksheet.set_column("%s:%s" % (firstwcell, firstwcell), width=width)
 
+            _row, _col = xl_cell_to_rowcol(cell)
+            if height:
+                worksheet.set_row(_row, height)
+
         # write data
         table_start_row, table_start_col = xl_cell_to_rowcol(table_start_cell)
         for table_row in table_data:
-            # worksheet.write_row(table_start_row, table_start_col, table_row, cell_format=None)
             col = table_start_col
             for token in table_row:
                 token = convert_val_to_simple(token)
