@@ -11,7 +11,7 @@ from pybarker.django.db.models import TruncatingCharField
 from pybarker.django.middleware import threadrequest
 from pybarker.utils.string import truncate_smart
 
-from .utils import smart_value, get_mh_user_model
+from .utils import smart_value, get_mh_user_model, smart_value_list
 
 logger = logging.getLogger(__name__)
 
@@ -179,6 +179,27 @@ class RecordsHolder(object):
             self.tracker.make_record(*record)
 
 
+# вспомогательный класс для двухэтапной обработки ручных логирований m2m поля
+class RecordsHolderM2M(object):
+    def __init__(self, tracker, instance, field, comment=None):
+        self.m2m_manager = getattr(instance, field, None)
+        if not self.m2m_manager:
+            logger.error(f"error m2m manager field {field} for {instance.__class__.__name__}#{instance.id}")
+            return
+        self.tracker = tracker
+        self.instance = instance
+        self.field = field
+        self.comment = comment
+        self.old_records = smart_value_list(self.m2m_manager.all())  # list т.к. менеджеры ленивые
+
+    def save(self):
+        if not self.m2m_manager:  # пустышка в ошибочном make_records_m2m?
+            pass
+        new_records = smart_value_list(self.m2m_manager.all())
+        # (instance, action_flag, field, oldvalue, newvalue, [comment])
+        self.tracker.make_record(self.instance, CHANGE, self.field, self.old_records, new_records, self.comment)
+
+
 # трекер который добавляет к моделям для их автологирования
 class HistoryModelTracker(object):
 
@@ -246,7 +267,12 @@ class HistoryModelTracker(object):
 
     def _fields_included(self, model):
         fields = []
-        for field in model._meta.fields:
+        for field in model._meta.get_fields():
+            # get_fields помимо обычных(в т.ч. fk) и m2m-полей (которые внутри реализованы отдельно от обычных)
+            # возвращает ещё и список отношений ManyToManyRel, ManyToOneRel, OneToOneRel (наследники ForeignObjectRel)
+            # которые не настоящие поля для нас.
+            if not isinstance(field, models.Field):
+                continue
             if self.included_fields is not None and field.name not in self.included_fields:
                 continue
             if self.excluded_fields and field.name in self.excluded_fields:
@@ -309,6 +335,8 @@ class HistoryModelTracker(object):
 
     # массовое создание записей на случай ручного bulk_update, вызывается ДО, получается вирт объект, ПОСЛЕ ему
     # делается .save(). Разнесено тк иначе инфу не получить, а потом вдруг bulk_update упадёт итд.
+    # Как и в bulk_update передаются изменённые, но несохранённые objs, вычисляется старое значение по переданному id из
+    # перезапрошенных БД, новые беруются из переданных objs.
     def make_records_bulk_update(self, objs, fields, comment=None):
         # выборка по новым значениям (именно изменённые же передаются в objs)
         objs_ids = []  # ид для дальнейшей выборки
@@ -333,6 +361,12 @@ class HistoryModelTracker(object):
                 oldvalue = old_val.get(field)
                 records.append((instance, CHANGE, field, oldvalue, newvalue, comment))
         return RecordsHolder(self, records)
+
+    # создание записи на случай ручной манипуляции с m2m полем. например при всяких формсетах сигналами не обойтись.
+    # вызывается ДО, получается вирт объект, ПОСЛЕ ему делается .save().
+    # сначала сохраняется слепок содержимого поля, в save запрашиваются новые значения.
+    def make_records_m2m(self, obj, field, comment=None):
+        return RecordsHolderM2M(self, obj, field, comment)
 
     # уточняем реально ли значение поменялось. суть в том, что в начале создания модели например все значения булеанов меняются с None на дефолт
     def _if_value_really_changed(self, field, oldvalue, newvalue):

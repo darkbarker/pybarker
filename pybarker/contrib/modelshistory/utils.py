@@ -10,6 +10,12 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 
 
+# класс которым можно обернуть значение чтобы тут понять что это перечень значений для одного поля, а не просто list
+# используется в коде для логирования m2m например
+class smart_value_list(list):
+    pass
+
+
 # превращает значение в то, что будет сохранено как визуализация значения в БД и отображено потом (и возвращает str)
 def smart_value(value):
     if value is None:
@@ -29,6 +35,8 @@ def smart_value(value):
         return "☑" if value else "☐"
     if t is decimal.Decimal:
         return str(value)
+    if t is smart_value_list:
+        return ", ".join([smart_value(v) for v in value])
     if t is dict or t is list:  # json
         return json.dumps(value, cls=DjangoJSONEncoder, ensure_ascii=False)
     if isinstance(value, models.Model):
