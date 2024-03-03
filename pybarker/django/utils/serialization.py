@@ -84,14 +84,29 @@ def jsonify_model(instance, fieldsonly=None):
     return data
 
 
+# миксин для сериализации модели в нужном виде
+class JsonApiSerializableMixin(object):
+    def serialize_json(self, request, fieldsonly):
+        return jsonify_model(self, fieldsonly)
+
+
 # енкодер для джосона более полноценный, умеющий сериализовать по возможности всё
 class ApiDjangoJSONEncoder(DjangoJSONEncoder):
 
-    def __init__(self, fieldsonly, **kwargs):
+    def __init__(self, request, fieldsonly, **kwargs):
+        self.request = request
         self.fieldsonly = fieldsonly
         super().__init__(**kwargs)
 
     def default(self, o):
+        if isinstance(o, JsonApiSerializableMixin):
+            serdict = o.serialize_json(self.request, self.fieldsonly)
+            # ещё раз доп. фильтруем, т.к. модель обычно надобавляет своих полей (хотя им надо бы проверять) или может модель вообще не юзала родительский serialize_api
+            if self.fieldsonly:
+                for key in list(serdict.keys()):
+                    if key not in self.fieldsonly:
+                        serdict.pop(key, None)
+            return serdict
         if isinstance(o, QuerySet):
             return list(o)
         elif isinstance(o, set):
