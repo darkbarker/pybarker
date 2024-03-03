@@ -87,6 +87,10 @@ def jsonify_model(instance, fieldsonly=None):
 # енкодер для джосона более полноценный, умеющий сериализовать по возможности всё
 class ApiDjangoJSONEncoder(DjangoJSONEncoder):
 
+    def __init__(self, fieldsonly, **kwargs):
+        self.fieldsonly = fieldsonly
+        super().__init__(**kwargs)
+
     def default(self, o):
         if isinstance(o, QuerySet):
             return list(o)
