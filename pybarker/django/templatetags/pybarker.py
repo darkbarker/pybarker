@@ -6,7 +6,7 @@ from django.urls import reverse, NoReverseMatch
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 
-from pybarker.utils.bbcoderender import render as bbcoderender
+from pybarker.utils.bbcoderender import render as bbcoderender, bbcode_remove_tags
 from pybarker.utils.string import truncate_smart
 
 register = template.Library()
@@ -187,6 +187,12 @@ def addstr(arg1, arg2):
 @register.filter(is_safe=True)
 def bbcode(value):
     return mark_safe(bbcoderender(value))
+
+
+@register.filter
+def bbcode_remove(value):
+    """ Удаление тегов BBCode из строки """
+    return bbcode_remove_tags(value)
 
 
 # фильтр, возвращает true/false согласно возврату метода startswith на строке

@@ -50,3 +50,10 @@ def render(value):
     value = value.replace('\n', '<br />')
 
     return value
+
+
+def bbcode_remove_tags(value):
+    """Удаление тегов BBCode из строки."""
+
+    pattern = r'\[[a-z]+=?.*?\].*?\[\/[a-z]+\]'
+    return re.sub(pattern, '', value, flags=re.DOTALL)
