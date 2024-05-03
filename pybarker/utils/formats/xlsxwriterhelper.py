@@ -42,6 +42,8 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
     * {
         "width": целое-число-ширина-столбца,
         "height": целое-число-высота-строки (достаточно установить для одной ячейки, применится ко всей строке)
+        "freeze_row": True/False - закрепить столбец (достаточно установить для одной ячейки)
+        "freeze_col": True/False - закрепить строку (достаточно установить для одной ячейки)
         "cell_format": {"align": "left", "bg_color": red, ...}
        }
 
@@ -51,6 +53,7 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
     table_start_cell - ячейка с которой начинается рисование таблицы (вправо-вниз)
 
     table_data - итерабл строк, каждая из которых - тоже итерабл по ячейкам
+    ячейки - кортеж ('data', cell_style), список ['data', cell_style] или просто строка 'data'
 
     вариант вызова для многолистового:
     [
@@ -90,6 +93,8 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
             # prepare options
             width = options.get("width", None)
             height = options.get("height", None)
+            freeze_row = options.get("freeze_row", None)
+            freeze_col = options.get("freeze_col", None)
             # "cell_format" prepare
             if "cell_format" in options:
                 # если задан "cell_format", то мы в любом случае будем юзать свой format вместо header_def_format, но
@@ -114,14 +119,25 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
             _row, _col = xl_cell_to_rowcol(cell)
             if height:
                 worksheet.set_row(_row, height)
+            # freeze row/col+1, т.к. указывается ячейка для разделения (следующая), см.доку на worksheet.freeze_panes
+            if freeze_row:
+                worksheet.freeze_panes(_row + 1, 0)
+            if freeze_col:
+                worksheet.freeze_panes(0, _col + 1)
 
         # write data
         table_start_row, table_start_col = xl_cell_to_rowcol(table_start_cell)
         for table_row in table_data:
             col = table_start_col
             for token in table_row:
+                if isinstance(token, (list, tuple)):
+                    token, style = token
+                else:
+                    token = token
+                    style = {}
+                cell_format = add_format(workbook, style) if style else None
                 token = convert_val_to_simple(token)
-                worksheet.write(table_start_row, col, token)
+                worksheet.write(table_start_row, col, token, cell_format)
                 col += 1
             table_start_row += 1
 
@@ -130,3 +146,19 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
     output.seek(0)
 
     return output
+
+
+def add_format(workbook, properties=None):
+    """Переопределенный метод добавления формат.
+
+    Добавляем в форматы книги, только если его там нет, чтобы не хранить сотни одинаковых форматов.
+    """
+
+    format_properties = workbook.default_format_properties.copy()
+    if properties:
+        format_properties.update(properties)
+    xf_format = xlsxwriter.format.Format(format_properties, workbook.xf_format_indices, workbook.dxf_format_indices)
+    if xf_format not in workbook.formats:
+        workbook.formats.append(xf_format)
+
+    return xf_format
