@@ -151,7 +151,7 @@ def bound_field(form, name):
 # <li class="nav-home {% active 'url-name' %}"><a href="#">Home</a></li>
 # <li class="nav-blog {% active '^/regex/' %}"><a href="#">Blog</a></li>
 @register.simple_tag(takes_context=True)
-def active(context, pattern_or_urlname):
+def active(context, pattern_or_urlname, active_name="active"):
     try:
         pattern = "^" + reverse(pattern_or_urlname)
     except NoReverseMatch:
@@ -162,7 +162,7 @@ def active(context, pattern_or_urlname):
         pattern = pattern_or_urlname
     path = context["request"].path
     if re.search(pattern, path):
-        return "active"
+        return active_name
     return ""
 
 
