@@ -3,7 +3,9 @@ from django.core.mail.backends.smtp import EmailBackend as _EmailBackend
 from constance import config
 
 
-# расширение EmailBackend, которое берёт настройки из constance
+# расширение backends.smtp.EmailBackend, которое берёт настройки из constance (сначала из settings)
+# параметры в constance учитываемые одноимённые с штатными:
+# EMAIL_HOST, EMAIL_PORT, EMAIL_HOST_USER, EMAIL_HOST_PASSWORD, EMAIL_USE_TLS
 class EmailBackend(_EmailBackend):
 
     def __init__(self, *args, **kwargs):
