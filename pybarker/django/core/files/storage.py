@@ -1,5 +1,3 @@
-import os
-
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 
@@ -7,5 +5,5 @@ from django.core.files.storage import FileSystemStorage
 class OverwriteFileSystemStorage(FileSystemStorage):
     def get_available_name(self, name, max_length=None):
         if self.exists(name):
-            os.remove(os.path.join(settings.MEDIA_ROOT, name))  # TODO self.delete(name)
+            self.delete(name)
         return name
