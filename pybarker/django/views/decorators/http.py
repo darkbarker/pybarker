@@ -1,6 +1,8 @@
 from functools import wraps
 from django.http import HttpResponseBadRequest, HttpResponseForbidden
 
+from pybarker.django.utils.request import request_is_ajax
+
 
 def ajax_required(f):
     '''
@@ -13,7 +15,7 @@ def ajax_required(f):
     @wraps(f)
     def wrap(request, *args, **kwargs):
         # проверяем заголовок X-Requested-With:XMLHttpRequest
-        if not request.is_ajax():
+        if not request_is_ajax(request):
             return HttpResponseBadRequest()
         return f(request, *args, **kwargs)
     return wrap

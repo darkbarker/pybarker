@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.deprecation import MiddlewareMixin
 
 from pybarker.django.views.decorators.http import ajax_login_required
+from pybarker.django.utils.request import request_is_ajax
 
 
 class LoginRequiredMiddleware(MiddlewareMixin):
@@ -26,6 +27,6 @@ class LoginRequiredMiddleware(MiddlewareMixin):
         for url in self.exceptions:
             if url.match(request.path):
                 return None
-        if request.is_ajax():
+        if request_is_ajax(request):
             return ajax_login_required(view_func)(request, *view_args, **view_kwargs)
         return login_required(view_func)(request, *view_args, **view_kwargs)
