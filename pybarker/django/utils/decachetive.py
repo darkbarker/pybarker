@@ -37,6 +37,10 @@ def _debug(debug, text, *args):
         print("decachetive: %s" % text.format(*args))
 
 
+def _is_cache_disable():
+    return getattr(settings, "DECACHETIVE_DISABLE", False)
+
+
 # генерит имя кеша ключей, список от одного до нескольких строк
 # обычно один: cache_key_name + конкатенеция суффикса
 # может быть несколько, если в суфиксте LISTEDSUFFIX - один (и только один) из элементов суффикса - list тогда он
@@ -67,6 +71,8 @@ def _make_cache_keys(cache_key_prefix, cache_key_suffix):
 
 # сброс кеша, передаём сюда имя ключа кеша (keyname) или закешированную функцию прямиком + все параметры которые составляют ключ, те что в suffix в том же порядке
 def purge_cache(cached_function_or_keyname, *args):
+    if _is_cache_disable():
+        return
     # полчаем префикс как обычно
     if isinstance(cached_function_or_keyname, str):
         # если передали keyname
@@ -193,8 +199,7 @@ def _connect_invalidator(depends, cache_key_prefix, debug):
 def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=False):
     def decorator(func):
         # проверяем сразу не выключено ли
-        cache_disable = getattr(settings, "DECACHETIVE_DISABLE", False)
-        if cache_disable:
+        if _is_cache_disable():
             _debug(debug, "cache disable")
             return func
 
