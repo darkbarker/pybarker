@@ -2,6 +2,7 @@ import inspect
 
 from functools import wraps
 
+from django.conf import settings
 from django.core.cache import caches
 from django.db.models import QuerySet, signals
 
@@ -26,7 +27,8 @@ def _one_or_tuple_to_list(arg):
 
 # получает экземпляр кеша
 def _get_cache():
-    return caches["default"]  # TODO настройку сделать
+    cache_alias = getattr(settings, "DECACHETIVE_CACHE_ALIAS", "default")
+    return caches[cache_alias]
 
 
 # текст дебажный
@@ -190,6 +192,12 @@ def _connect_invalidator(depends, cache_key_prefix, debug):
 # в лямбду передаётся один параметр - инстанс модели изменённой/удалённой (оно же instance в сигнал что приходит), возвращает ключ для инвалидации - одно или тупл значений (см. как suffix описание)
 def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=False):
     def decorator(func):
+        # проверяем сразу не выключено ли
+        cache_disable = getattr(settings, "DECACHETIVE_DISABLE", False)
+        if cache_disable:
+            _debug(debug, "cache disable")
+            return func
+
         # типа полное имя оборачиваемой функции/метода, префикс ключа, или ключ без суффикса
         cache_key_prefix = "decachetive::%s" % (keyname or _make_func_id(func))
 
