@@ -143,7 +143,9 @@ class HistoryModelEntry(models.Model):
     def field_title(self):
         if self.field is None:
             return None
-        tracker = _tracker_cache[self.content_type.model_class()]
+        tracker = _tracker_cache.get(self.content_type.model_class())
+        if not tracker:
+            return f"?{self.field}?"
         return tracker.get_fields_title().get(self.field, "?%s?" % self.field)
 
     def __str__(self):
