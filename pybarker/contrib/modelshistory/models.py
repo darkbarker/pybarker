@@ -104,8 +104,8 @@ class HistoryModelEntry(models.Model):
 
     # контент тайп сущности логируемой
     content_type = models.ForeignKey(ContentType, models.PROTECT, verbose_name=_("content type"), related_name="+")
-    # ссылка на объект_ид сущности (если удалён чтобы не дёргалось и каскадом не удалялос)
-    object_id = models.CharField(max_length=32)
+    # ссылка на объект_ид сущности (если удалён чтобы не дёргалось и каскадом не удалялос)(36 - длина uuid строкой)
+    object_id = models.CharField(max_length=36)
     # текстовое представление сущности
     object_repr = TruncatingCharField(_("object repr"), max_length=200)
     # флаг действия (см.выше)
@@ -124,7 +124,7 @@ class HistoryModelEntry(models.Model):
     # тег связывающий разные группы, например, айдишник объекта у всех его подчинённых объектов, чтобы потом например
     # можно было искать под-итемсы у родительского итемса и они не потерялись, т.е. чтобы дочерние элементы находились
     # в истории родительского. по этому ведётся поиск в общей истории.
-    root_object_id = models.CharField(max_length=32)
+    root_object_id = models.CharField(max_length=36)
     # контент-тайп родительского, теоретически можно вычислить всегда из настроек трекера, но хранится явно чтобы всегда
     # можно было достоверно отнести записи лога к конкретной root-модели безошибочно (в т.ч. если конфигурация трекеров
     # меняется, например)
@@ -258,7 +258,8 @@ class HistoryModelTracker(object):
         return self._fields_title
 
     def _pre_save(self, instance, **kwargs):
-        instance.modelshistory_unsaved_copy = self._model_manager(instance).get(pk=instance.pk) if instance.pk else None
+        # в случае кастомных pk он может инициализироваться до попадания в БД, обязательна проверка на _state.adding
+        instance.modelshistory_unsaved_copy = self._model_manager(instance).get(pk=instance.pk) if (instance.pk and instance._state.adding is False) else None
 
     def _post_save(self, instance, created, **kwargs):
         if not kwargs.get("raw", False):
