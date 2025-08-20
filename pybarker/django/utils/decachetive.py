@@ -1,5 +1,4 @@
 import inspect
-
 from functools import wraps
 
 from django.conf import settings
@@ -60,7 +59,10 @@ def _make_cache_keys(cache_key_prefix, cache_key_suffix):
         # [1, 2, [3]] -> [[1, 2, 3]]
         # [[1, 2]] -> [[1], [2]]
         # [1, []] -> []
-        suffix_list_list = [[suff if suff != onelistedsuffix else onelistedsuffix_item for suff in cache_key_suffix] for onelistedsuffix_item in onelistedsuffix]
+        suffix_list_list = [
+            [suff if suff != onelistedsuffix else onelistedsuffix_item for suff in cache_key_suffix]
+            for onelistedsuffix_item in onelistedsuffix
+        ]
     else:
         # [5, 6] -> [[5, 6]]
         suffix_list_list = [cache_key_suffix]
@@ -132,7 +134,10 @@ def _check_depends(depends):
         if depend_lambda:
             depend_lambda_param_count = _get_params_count(depend_lambda)
             if depend_lambda_param_count != 1:
-                raise TypeError("wrong depend format: callable arg-2 (%s) signature not one-param, but %s" % (repr(depend), depend_lambda_param_count))
+                raise TypeError(
+                    "wrong depend format: callable arg-2 (%s) signature not one-param, but %s"
+                    % (repr(depend), depend_lambda_param_count)
+                )
         _depends.append(depend)
     return _depends
 
@@ -170,7 +175,9 @@ def _connect_invalidator(depends, cache_key_prefix, debug):
 
         for sign in trig_signals:
             _debug(debug, "== connect signal #{} on sender {}", id(sign), trig_sender)
-            sign.connect(cache_invalidator, sender=trig_sender, weak=False)  # dispatch_uid="%s%s" % (FULL cache_key, triggers.index(t)
+            sign.connect(
+                cache_invalidator, sender=trig_sender, weak=False
+            )  # dispatch_uid="%s%s" % (FULL cache_key, triggers.index(t)
 
 
 # timeout: таймаут, не дольше этого в кеше пролежит
@@ -210,7 +217,9 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
 
         @wraps(func)
         def cached_func(*args, **kwargs):
-            cache_key_suffix = _one_or_tuple_to_list(suffix(*args, **kwargs)) if suffix else []  # выполняем параметр-суффикс для параметров метода и получаем значение суффикса
+            cache_key_suffix = (
+                _one_or_tuple_to_list(suffix(*args, **kwargs)) if suffix else []
+            )  # выполняем параметр-суффикс для параметров метода и получаем значение суффикса
             cache_keys_full = _make_cache_keys(cache_key_prefix, cache_key_suffix)
 
             # суффикс для функции должен быть один, т.е. в отличие от инвалидаторов там не может быть множественных (см. LISTEDSUFFIX) суффиксов
@@ -241,4 +250,5 @@ def decachetived(timeout=None, keyname=None, suffix=None, depend=None, debug=Fal
             _connect_invalidator(_check_depends(depend), cache_key_prefix, debug)
 
         return cached_func
+
     return decorator

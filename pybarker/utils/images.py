@@ -1,5 +1,5 @@
-import zlib
 import struct
+import zlib
 
 from PIL import Image, ImageFile
 

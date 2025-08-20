@@ -1,5 +1,5 @@
 from functools import wraps
-from threading import Timer, Thread
+from threading import Thread, Timer
 
 
 def call_after(interval, function, *args, **kwargs):

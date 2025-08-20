@@ -1,12 +1,12 @@
-import unittest
 import time
+import unittest
 
 from pybarker.utils.redis import SharedStorage
 
 
 class Test(unittest.TestCase):
 
-    APP_REDIS_CONNECTION = 'redis://localhost:6379/3'
+    APP_REDIS_CONNECTION = "redis://localhost:6379/3"
 
     def setUp(self):
 
@@ -73,5 +73,5 @@ class Test(unittest.TestCase):
         self.shared_storage.delete("BEN666")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -72,7 +72,7 @@ class Test(unittest.TestCase):
         self.assertEqual(parse_bytes_dump("00 01 02 |"), b"\x00\x01\x02")
         self.assertEqual(parse_bytes_dump("00 01 02"), b"\x00\x01\x02")
         with self.assertRaises(ValueError):
-            self.assertEqual(parse_bytes_dump("00 01 FU"), b"\x00\x01\xFF")
+            self.assertEqual(parse_bytes_dump("00 01 FU"), b"\x00\x01\xff")
 
 
 if __name__ == "__main__":

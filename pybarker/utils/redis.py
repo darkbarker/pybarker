@@ -1,4 +1,5 @@
 import pickle
+
 try:
     import redis
 except ImportError as exc:

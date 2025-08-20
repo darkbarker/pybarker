@@ -1,6 +1,6 @@
+import datetime
 import io
 import re
-import datetime
 from decimal import Decimal
 from fractions import Fraction
 
@@ -17,10 +17,17 @@ XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml
 def convert_val_to_simple(token):
     num_types = (float, int, Decimal, Fraction)
     token_type = type(token)
-    if token is None or token_type is bool or token_type in num_types or token_type is str \
-            or token_type in (datetime.datetime, datetime.date, datetime.time, datetime.timedelta) \
-            or isinstance(token, num_types) or isinstance(token, str) or isinstance(token, bool) \
-            or isinstance(token, (datetime.datetime, datetime.date, datetime.time, datetime.timedelta)):
+    if (
+        token is None
+        or token_type is bool
+        or token_type in num_types
+        or token_type is str
+        or token_type in (datetime.datetime, datetime.date, datetime.time, datetime.timedelta)
+        or isinstance(token, num_types)
+        or isinstance(token, str)
+        or isinstance(token, bool)
+        or isinstance(token, (datetime.datetime, datetime.date, datetime.time, datetime.timedelta))
+    ):
         return token
     try:
         return str(token)
@@ -62,9 +69,19 @@ def make_excel(header_data, header_default_format=None, table_start_cell=None, t
     ]
     """
 
-    if isinstance(header_data, list) and header_default_format is None and table_start_cell is None and table_data is None:
+    if (
+        isinstance(header_data, list)
+        and header_default_format is None
+        and table_start_cell is None
+        and table_data is None
+    ):
         sheets = header_data
-    elif header_data is not None and header_default_format is not None and table_start_cell is not None and table_data is not None:
+    elif (
+        header_data is not None
+        and header_default_format is not None
+        and table_start_cell is not None
+        and table_data is not None
+    ):
         sheets = [(None, (header_data, header_default_format, table_start_cell, table_data))]
     else:
         raise ValueError("must be 4 params or list of tuples")

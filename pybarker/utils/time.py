@@ -1,6 +1,5 @@
 import calendar
 import datetime
-
 from datetime import date
 
 

@@ -8,13 +8,13 @@ from django.views.debug import ExceptionReporter
 # для анонимного юзера будет 'AnonymousUser#None'
 class RequestPushUserFilter(logging.Filter):
     def filter(self, record):
-        if hasattr(record, 'request'):
-            if hasattr(record.request, 'user'):
-                record.user = '%s#%s' % (record.request.user, record.request.user.pk)
+        if hasattr(record, "request"):
+            if hasattr(record.request, "user"):
+                record.user = "%s#%s" % (record.request.user, record.request.user.pk)
             else:
-                record.user = '?'
+                record.user = "?"
         else:
-            record.user = '-'
+            record.user = "-"
         return True
 
 

@@ -1,4 +1,3 @@
-
 def get_client_ip(request):
     # X-Forwarded-For: <client>, <proxy1>, <proxy2>
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")

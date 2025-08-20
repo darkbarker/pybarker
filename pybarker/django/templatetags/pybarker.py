@@ -2,11 +2,12 @@ import codecs
 import re
 
 from django import template
-from django.urls import reverse, NoReverseMatch
+from django.urls import NoReverseMatch, reverse
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
 
-from pybarker.utils.bbcoderender import render as bbcoderender, bbcode_remove_tags
+from pybarker.utils.bbcoderender import bbcode_remove_tags
+from pybarker.utils.bbcoderender import render as bbcoderender
 from pybarker.utils.string import truncate_smart
 
 register = template.Library()
@@ -191,7 +192,7 @@ def bbcode(value):
 
 @register.filter
 def bbcode_remove(value):
-    """ Удаление тегов BBCode из строки """
+    """Удаление тегов BBCode из строки"""
     return bbcode_remove_tags(value)
 
 

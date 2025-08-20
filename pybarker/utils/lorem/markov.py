@@ -38,5 +38,7 @@ class Markov(object):
         gen_words = []
         for _ in range(size):
             gen_words.append(seed_word)
-            seed_word, next_word = next_word, random.choice(self.cache[(seed_word, next_word)] if (seed_word, next_word) in self.cache else self.words)
+            seed_word, next_word = next_word, random.choice(
+                self.cache[(seed_word, next_word)] if (seed_word, next_word) in self.cache else self.words
+            )
         return " ".join(gen_words)

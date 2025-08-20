@@ -1,12 +1,12 @@
-import unittest
 import time
+import unittest
 
 from pybarker.utils.otp import OtpStore
 
 
 class Test(unittest.TestCase):
 
-    APP_REDIS_CONNECTION = 'redis://localhost:6379/3'
+    APP_REDIS_CONNECTION = "redis://localhost:6379/3"
     OTP_PASS_TIMEOUT = 5
     OTP_PASS_LENGTH = 6
     OTP_RETRY_TIMEOUT = 7
@@ -17,7 +17,7 @@ class Test(unittest.TestCase):
             self.APP_REDIS_CONNECTION,
             timeout=self.OTP_PASS_TIMEOUT,
             otp_length=self.OTP_PASS_LENGTH,
-            retry_timeout=self.OTP_RETRY_TIMEOUT
+            retry_timeout=self.OTP_RETRY_TIMEOUT,
         )
 
     def test_retry_timeout(self):
@@ -75,10 +75,10 @@ class Test(unittest.TestCase):
 
         # int
         self.otp_store.set(user_id, 666)
-        self.assertEqual(self.otp_store.get(user_id), '666')
+        self.assertEqual(self.otp_store.get(user_id), "666")
         time.sleep(self.OTP_PASS_TIMEOUT + 1)
         self.assertEqual(self.otp_store.get(user_id), None)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

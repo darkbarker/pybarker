@@ -1,9 +1,10 @@
 import os
 import unittest
-from time import time, sleep
+from time import sleep, time
 
 import django
-os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.django_test_settings'  # noqa
+
+os.environ["DJANGO_SETTINGS_MODULE"] = "tests.django_test_settings"  # noqa
 django.setup()  # noqa
 
 from django.db.models import signals
@@ -28,6 +29,7 @@ class TestCache(unittest.TestCase):
     def test_make_func_id(self):
         def testf():
             pass
+
         # __main__.TestCache.test__make_func_id.<locals>.testf
         self.assertRegex(decachetive._make_func_id(testf), r"^.+\.TestCache\..+\.testf$")
         # __main__.TestCache.test_make_func_id
@@ -39,8 +41,12 @@ class TestCache(unittest.TestCase):
         self.assertEqual(decachetive._make_cache_keys("keyname", [1, 2]), ["keyname::1::2"])
         self.assertEqual(decachetive._make_cache_keys("keyname", [1, 2, "3"]), ["keyname::1::2::3"])
 
-        self.assertEqual(decachetive._make_cache_keys("keyname", [1, 2, [3, 4]]), ["keyname::1::2::3", "keyname::1::2::4"])
-        self.assertEqual(decachetive._make_cache_keys("keyname", [1, [2, 3], 4]), ["keyname::1::2::4", "keyname::1::3::4"])
+        self.assertEqual(
+            decachetive._make_cache_keys("keyname", [1, 2, [3, 4]]), ["keyname::1::2::3", "keyname::1::2::4"]
+        )
+        self.assertEqual(
+            decachetive._make_cache_keys("keyname", [1, [2, 3], 4]), ["keyname::1::2::4", "keyname::1::3::4"]
+        )
 
         self.assertEqual(decachetive._make_cache_keys("keyname", [1, 2, [3]]), ["keyname::1::2::3"])
         self.assertEqual(decachetive._make_cache_keys("keyname", [1, [2]]), ["keyname::1::2"])
@@ -87,7 +93,10 @@ class TestCache(unittest.TestCase):
 
     def test_suffix(self):
 
-        @decachetive.decachetived(timeout=1, suffix=lambda n: n,)
+        @decachetive.decachetived(
+            timeout=1,
+            suffix=lambda n: n,
+        )
         def _do_timeout(n):
             return time() + n
 
@@ -198,7 +207,10 @@ class TestCache(unittest.TestCase):
 
     def test_purge_function(self):
 
-        @decachetive.decachetived(timeout=1, suffix=lambda n: n,)
+        @decachetive.decachetived(
+            timeout=1,
+            suffix=lambda n: n,
+        )
         def _do_timeout(n):
             return time() + n
 
@@ -206,7 +218,11 @@ class TestCache(unittest.TestCase):
 
     def test_purge_keyname(self):
 
-        @decachetive.decachetived(timeout=1, keyname="testkeyname", suffix=lambda n: n,)
+        @decachetive.decachetived(
+            timeout=1,
+            keyname="testkeyname",
+            suffix=lambda n: n,
+        )
         def _do_timeout(n):
             return time() + n
 
@@ -246,10 +262,11 @@ class TestCache(unittest.TestCase):
         depend = "model.Model1"
         self.assertEqual(decachetive._check_depends(depend), [("model.Model1", None)])
 
-        depend = [("model.Model1", lambda1),
-                  ("model.Model2",),
-                  "model.Model3"]
-        self.assertEqual(decachetive._check_depends(depend), [("model.Model1", lambda1), ("model.Model2", None), ("model.Model3", None)])
+        depend = [("model.Model1", lambda1), ("model.Model2",), "model.Model3"]
+        self.assertEqual(
+            decachetive._check_depends(depend),
+            [("model.Model1", lambda1), ("model.Model2", None), ("model.Model3", None)],
+        )
 
         with self.assertRaises(TypeError) as e:
             decachetive._check_depends([(None, None)])
@@ -284,6 +301,7 @@ class TestCache(unittest.TestCase):
             return time() + n
 
         with self.assertRaises(TypeError) as e:
+
             @decachetive.decachetived(
                 timeout=1,
                 suffix=lambda n: n,
@@ -291,10 +309,12 @@ class TestCache(unittest.TestCase):
             )
             def _error_2_param(n):
                 return time() + n
+
         self.assertIn("wrong depend format", str(e.exception))
         self.assertIn("not one-param, but 2", str(e.exception))
 
         with self.assertRaises(TypeError) as e:
+
             @decachetive.decachetived(
                 timeout=1,
                 suffix=lambda n: n,
@@ -302,6 +322,7 @@ class TestCache(unittest.TestCase):
             )
             def _error_0_param(n):
                 return time() + n
+
         self.assertIn("wrong depend format", str(e.exception))
         self.assertIn("not one-param, but 0", str(e.exception))
 
@@ -322,8 +343,7 @@ class TestCache(unittest.TestCase):
         @decachetive.decachetived(
             timeout=1,
             suffix=lambda n: n,
-            depend=[(Model1, lambda m1: m1.pk1),
-                    (Model2, lambda m2: m2.pk2)],
+            depend=[(Model1, lambda m1: m1.pk1), (Model2, lambda m2: m2.pk2)],
             debug=False,
         )
         def _do_timeout(n):
@@ -530,12 +550,7 @@ class TestCache(unittest.TestCase):
         class Model1:
             p1 = None
 
-        @decachetive.decachetived(
-            timeout=1,
-            suffix=lambda n: n,
-            depend=[(Model1, lambda _: ([1, 3]))],
-            debug=False
-        )
+        @decachetive.decachetived(timeout=1, suffix=lambda n: n, depend=[(Model1, lambda _: ([1, 3]))], debug=False)
         def _do_timeout_array1(n):
             return time() + n
 
@@ -616,10 +631,7 @@ class TestCache(unittest.TestCase):
             p1 = None
 
         @decachetive.decachetived(
-            timeout=1,
-            suffix=lambda n: n,
-            depend=[(Model1, lambda _: (func_array()))],
-            debug=False
+            timeout=1, suffix=lambda n: n, depend=[(Model1, lambda _: (func_array()))], debug=False
         )
         def _do_timeout_array_func(n):
             return time() + n

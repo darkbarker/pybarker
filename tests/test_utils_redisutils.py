@@ -1,5 +1,5 @@
-import unittest
 import time
+import unittest
 
 from pybarker.utils.redisutils import RedisUtils
 

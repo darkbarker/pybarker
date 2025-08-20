@@ -2,12 +2,12 @@ import datetime
 import os
 import tempfile
 import zipfile
-
-from django.http import StreamingHttpResponse
-from django.conf import settings
-from django.core import management
 from wsgiref.util import FileWrapper
+
+from django.conf import settings
 from django.contrib.sites.shortcuts import get_current_site
+from django.core import management
+from django.http import StreamingHttpResponse
 
 """
 не забыть добавить в urls.py в urlpatterns что-то типа:

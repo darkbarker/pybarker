@@ -2,7 +2,6 @@ import re
 
 from unidecode import unidecode
 
-
 # ряд утилит для организации текстового поиска и сортировки, немного кода заимствовано из django-cities-light
 
 

@@ -1,6 +1,6 @@
 import unittest
 
-from pybarker.utils.collections import subdict, list_difference
+from pybarker.utils.collections import list_difference, subdict
 
 
 class TestMediaServerUtil(unittest.TestCase):

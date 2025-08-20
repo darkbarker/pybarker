@@ -2,7 +2,7 @@ from itertools import chain
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import Model, ManyToManyField, ForeignKey, FileField, ImageField
+from django.db.models import FileField, ForeignKey, ImageField, ManyToManyField, Model
 from django.db.models.fields.files import FieldFile, ImageFieldFile
 from django.db.models.query import QuerySet
 

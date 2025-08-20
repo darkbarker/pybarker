@@ -1,5 +1,6 @@
 import random
 import time
+
 try:
     import redis
 except ImportError as exc:
@@ -20,7 +21,7 @@ class OtpStore(object):
         return "%s:%s" % (self.redis_prefix, user_id)
 
     def generate_otp(self):
-        range_start = 10**(self.otp_length - 1)
+        range_start = 10 ** (self.otp_length - 1)
         range_end = (10**self.otp_length) - 1
         return str(random.randint(range_start, range_end))
 
