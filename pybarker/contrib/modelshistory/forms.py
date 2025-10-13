@@ -32,6 +32,7 @@ def make_HistoryFilterForm(modelclass, model_autocomplete_url, one_object_mode=N
         ),
     )
     """
+
     def _add_choices(tracker):
         # поля предваряем именем модели, чтобы различать в фильтре одинаковые имена полей
         model_name = get_model_name(tracker.cls)

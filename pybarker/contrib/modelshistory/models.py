@@ -62,7 +62,7 @@ class HistoryModelEntryManager(models.Manager):
                 root_object_id=smart_str(root_object_id) if root_object_id is not None else None,
                 root_content_type_id=root_content_type_id,
             )
-        except Exception as _:
+        except Exception:
             logger.exception("error write history model entry: object_repr=%s, field=%s" % (object_repr, field))
 
     # общий метод создания для основной одноуровневой модели
@@ -136,6 +136,9 @@ class HistoryModelEntry(models.Model):
         ordering = ("-id",)
         verbose_name = _("log entry")
         verbose_name_plural = _("log entries")
+        indexes = [
+            models.Index(fields=["content_type_id", "object_id", "field"]),
+        ]
 
     def action_flag_title(self):
         return ACTION_FLAGS[self.action_flag] if self.action_flag in ACTION_FLAGS else "?"
@@ -155,7 +158,7 @@ class HistoryModelEntry(models.Model):
         return f"<history entry object_id:{self.object_id} field:{self.field}>"
 
     def get_edited_object(self):
-        """ Returns the edited object represented by this log entry """
+        """Returns the edited object represented by this log entry"""
         return self.content_type.get_object_for_this_type(pk=self.object_id)
 
     @cached_property

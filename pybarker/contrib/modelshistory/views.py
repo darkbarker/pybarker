@@ -93,7 +93,7 @@ class ModelFieldHistory(View):
         # model
         try:
             Model = apps.get_model(mpf_items[0])
-        except LookupError as _:
+        except LookupError:
             return HttpResponseBadRequest('not found model "%s"' % (mpf_items[0]))
         content_type = ContentType.objects.get_for_model(Model, for_concrete_model=False)
         content_type_id = content_type.pk
@@ -116,7 +116,7 @@ class ModelFieldHistory(View):
         try:
             model = Model._default_manager.get(pk=pk)
             pk = model.pk  # перетираем pk настоящим pk от модели (на случай если pk был составной вдруг)
-        except ObjectDoesNotExist as _:
+        except ObjectDoesNotExist:
             return HttpResponseBadRequest('not found "%s" with pk="%s"' % (content_type, pk))
         # получаем поле для справки
         fields_title = Model.historylog.get_fields_title()

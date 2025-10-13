@@ -67,7 +67,7 @@ def check_modelshistory(app_configs=None, **kwargs):
 class ModelshistoryConfig(AppConfig):
     name = "pybarker.contrib.modelshistory"
     verbose_name = "models history"
-    default_auto_field = 'django.db.models.BigAutoField'
+    default_auto_field = "django.db.models.BigAutoField"
 
     def ready(self):
         checks.register(check_modelshistory)

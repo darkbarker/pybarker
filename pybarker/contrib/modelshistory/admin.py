@@ -24,12 +24,14 @@ class HistoryModelEntryAdmin(admin.ModelAdmin):
 
     def f_action_time(self, obj):
         return smart_value(obj.action_time)
+
     f_action_time.short_description = "action time"
 
     def f_field(self, obj):
         if obj.field is None:
             return None
         return f"{obj.field_title()} ({obj.field})"
+
     f_field.short_description = "field"
 
 
