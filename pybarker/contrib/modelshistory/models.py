@@ -55,8 +55,8 @@ class HistoryModelEntryManager(models.Manager):
                 action_flag=action_flag,
 
                 field=field,
-                oldvalue=truncate_smart(smart_value(oldvalue), 1024, placeholder=" ...<{len}chars>... "),
-                newvalue=truncate_smart(smart_value(newvalue), 1024, placeholder=" ...<{len}chars>... "),
+                oldvalue=truncate_smart(smart_value(oldvalue, field), 1024, placeholder=" ...<{len}chars>... "),
+                newvalue=truncate_smart(smart_value(newvalue, field), 1024, placeholder=" ...<{len}chars>... "),
 
                 comment=comment,
                 root_object_id=smart_str(root_object_id) if root_object_id is not None else None,

@@ -1,6 +1,7 @@
 import datetime
 import decimal
 import json
+from enum import Enum
 
 from django.apps import apps as django_apps
 from django.conf import settings
@@ -17,7 +18,7 @@ class smart_value_list(list):
 
 
 # превращает значение в то, что будет сохранено как визуализация значения в БД и отображено потом (и возвращает str)
-def smart_value(value):
+def smart_value(value, field=None):
     if value is None:
         return None
     t = type(value)
@@ -43,7 +44,9 @@ def smart_value(value):
         return "[%s]" % str(value)
     if isinstance(value, models.Choices):  # int/str field with enum/choices
         return "[%s]" % str(value)
-    raise Exception("unknown value type %s" % t)
+    if isinstance(value, Enum):
+        return "[%s]" % str(value)
+    raise Exception(f"unknown value type {t}" + (f" ({field})" if field else ""))
 
 
 # modelclass -> app_label.model_name
