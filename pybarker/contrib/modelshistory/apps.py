@@ -2,7 +2,6 @@ from django.apps import AppConfig
 from django.core import checks
 from django.utils.module_loading import import_string
 
-
 # _issubclass + _contains_subclass is from django/contrib/admin/checks.py django 4.2.1
 
 def _issubclass(cls, classinfo):

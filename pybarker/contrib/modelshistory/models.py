@@ -1,17 +1,18 @@
 import logging
 
-from django.db import models
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.utils import timezone
-from django.utils.encoding import smart_str, force_str
+from django.utils.encoding import force_str, smart_str
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
+
 from pybarker.django.db.models import TruncatingCharField
 from pybarker.django.middleware import threadrequest
 from pybarker.utils.string import truncate_smart
 
-from .utils import smart_value, get_mh_user_model, smart_value_list
+from .utils import get_mh_user_model, smart_value, smart_value_list
 
 logger = logging.getLogger(__name__)
 

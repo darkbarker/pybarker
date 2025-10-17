@@ -1,13 +1,12 @@
 from django.apps import apps
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseBadRequest, HttpResponse, Http404
-from django.shortcuts import render, get_object_or_404, redirect
+from django.http import Http404, HttpResponse, HttpResponseBadRequest
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic.base import View
 
-from django.contrib.contenttypes.models import ContentType
-
-from .models import HistoryModelEntry, VIEW
 from .forms import make_HistoryFilterForm
+from .models import VIEW, HistoryModelEntry
 from .utils import get_ct_for_model_name
 
 

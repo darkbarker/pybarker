@@ -1,9 +1,10 @@
-from django.contrib import admin
 from django import forms
+from django.contrib import admin
+
+from pybarker.django.contrib.admin.filters import SimpleTextFilter
 
 from .models import HistoryModelEntry
 from .utils import smart_value
-from pybarker.django.contrib.admin.filters import SimpleTextFilter
 
 
 class HistoryModelEntryAdminForm(forms.ModelForm):

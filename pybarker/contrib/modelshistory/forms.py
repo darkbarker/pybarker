@@ -1,14 +1,13 @@
+from dal import autocomplete
 from django import forms
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-
-from dal import autocomplete
-
 from utils.forms_fields import DateRangeField
+
 from pybarker.django.forms.fields import EmptyChoiceField
 
 from .models import ACTION_FLAGS, VIEW
-from .utils import get_model_name, get_mh_user_model
+from .utils import get_mh_user_model, get_model_name
 
 UserProfile = get_mh_user_model()
 
